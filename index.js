@@ -1,23 +1,23 @@
 'use strict';
 
 var path = require('path');
-var through = require('through2');
 var File = require('vinyl');
+var convert = require('convert-source-map');
+var stripBom = require('strip-bom');
 var acorn = require('acorn');
 var SourceMapGenerator = require('source-map').SourceMapGenerator;
+var css = require('css');
+var fs = require('graceful-fs');
+var detectNewline = require('detect-newline');
 
-var PLUGIN_NAME = 'vinyl-sourcemaps';
+var PLUGIN_NAME = 'vinyl-sourcemap';
+var urlRegex = /^(https?|webpack(-[^:]+)?):\/\//;
 
 function unixStylePath (filePath) {
 	return filePath.split(path.sep).join('/');
 }
 
-function processFile (file, options) {
-
-	if (!file || !File.isVinyl(file)) {
-		throw new Error('Not a vinyl file');
-	}
-
+function addSourcemap (file, options, caller) {
 	var fileContent = file.contents.toString();
 	var sourceMap;
 
@@ -26,6 +26,7 @@ function processFile (file, options) {
 
 		// Try to read inline source map
 		sourceMap = convert.fromSource(fileContent);
+
 		if (sourceMap) {
 			sourceMap = sourceMap.toObject();
 			// sources in map are relative to the source file
@@ -79,14 +80,15 @@ function processFile (file, options) {
 
 						// else load content from file
 					} else {
+
 						try {
 							if (options.debug) {
-								console.log(PLUGIN_NAME + '-init: No source content for "' + source + '". Loading from file.');
+								console.log(PLUGIN_NAME + '-' + caller + ': No source content for "' + source + '". Loading from file.');
 							}
 							sourceContent = stripBom(fs.readFileSync(absPath, 'utf8'));
 						} catch (e) {
 							if (options.debug) {
-								console.warn(PLUGIN_NAME + '-init: source file not found: ' + absPath);
+								console.warn(PLUGIN_NAME + '-' + caller + ': source file not found: ' + absPath);
 							}
 						}
 					}
@@ -163,26 +165,301 @@ function processFile (file, options) {
 
 	sourceMap.file = unixStylePath(file.relative);
 	file.sourceMap = sourceMap;
-
 	return file;
+}
+
+function writeSourcemap (file, destPath, options, caller) {
+	options = options || {};
+
+	// Throw an error if the file argument is not a vinyl file
+	if (!File.isVinyl(file)) {
+		throw new Error(PLUGIN_NAME + '-' + caller + ': Not a vinyl file');
+	}
+
+	// return array with file & optionally sourcemap file
+	var arr = [];
+
+	// set defaults for options if unset
+	if (options.includeContent === undefined) {
+		options.includeContent = true;
+	}
+	if (options.addComment === undefined) {
+		options.addComment = true;
+	}
+	if (options.charset === undefined) {
+		options.charset = 'utf8';
+	}
+
+	var sourceMap = file.sourceMap;
+
+	// Throw an error if the file doesn't have a sourcemap
+	if (!file.sourceMap) {
+		throw new Error(PLUGIN_NAME + '-' + caller + ': No sourcemap found');
+	}
+
+	// fix paths if Windows style paths
+	sourceMap.file = unixStylePath(file.relative);
+
+	if (options.mapSources && typeof options.mapSources === 'function') {
+		sourceMap.sources = sourceMap.sources.map(function(filePath) {
+			return options.mapSources(filePath);
+		});
+	}
+
+	sourceMap.sources = sourceMap.sources.map(function(filePath) {
+		return unixStylePath(filePath);
+	});
+
+	if (typeof options.sourceRoot === 'function') {
+		sourceMap.sourceRoot = options.sourceRoot(file);
+	} else {
+		sourceMap.sourceRoot = options.sourceRoot;
+	}
+	if (sourceMap.sourceRoot === null) {
+		sourceMap.sourceRoot = undefined;
+	}
+
+	if (options.includeContent) {
+		sourceMap.sourcesContent = sourceMap.sourcesContent || [];
+
+		// load missing source content
+		for (var i = 0; i < file.sourceMap.sources.length; i++) {
+			if (!sourceMap.sourcesContent[i]) {
+				var sourcePath = path.resolve(sourceMap.sourceRoot || file.base, sourceMap.sources[i]);
+				try {
+					if (options.debug) {
+						console.log(PLUGIN_NAME + '-' + caller + ': No source content for "' + sourceMap.sources[i] + '". Loading from file.');
+					}
+					sourceMap.sourcesContent[i] = stripBom(fs.readFileSync(sourcePath, 'utf8'));
+				} catch (e) {
+					if (options.debug) {
+						console.warn(PLUGIN_NAME + '-' + caller + ': source file not found: ' + sourcePath);
+					}
+				}
+			}
+		}
+	} else {
+		delete sourceMap.sourcesContent;
+	}
+
+	var extension = file.relative.split('.').pop();
+	var newline = detectNewline(file.contents.toString());
+	var commentFormatter;
+
+	switch (extension) {
+		case 'css':
+			commentFormatter = function(url) {
+				return newline + '/*# sourceMappingURL=' + url + ' */' + newline;
+			};
+			break;
+		case 'js':
+			commentFormatter = function(url) {
+				return newline + '//# sourceMappingURL=' + url + newline;
+			};
+			break;
+		default:
+			commentFormatter = function(url) {
+				return '';
+			};
+	}
+
+	var comment, sourceMappingURLPrefix;
+	if (destPath === undefined || destPath === null) {
+		// encode source map into comment
+		var base64Map = new Buffer(JSON.stringify(sourceMap)).toString('base64');
+		comment = commentFormatter('data:application/json;charset=' + options.charset + ';base64,' + base64Map);
+	} else {
+		var mapFile = path.join(destPath, file.relative) + '.map';
+		// custom map file name
+		if (options.mapFile && typeof options.mapFile === 'function') {
+			mapFile = options.mapFile(mapFile);
+		}
+
+		var sourceMapPath = path.join(file.base, mapFile);
+
+		// if explicit destination path is set
+		if (options.destPath) {
+			var destSourceMapPath = path.join(file.cwd, options.destPath, mapFile);
+			var destFilePath = path.join(file.cwd, options.destPath, file.relative);
+			sourceMap.file = unixStylePath(path.relative(path.dirname(destSourceMapPath), destFilePath));
+			if (sourceMap.sourceRoot === undefined) {
+				sourceMap.sourceRoot = unixStylePath(path.relative(path.dirname(destSourceMapPath), file.base));
+			} else if (sourceMap.sourceRoot === '' || (sourceMap.sourceRoot && sourceMap.sourceRoot[0] === '.')) {
+				sourceMap.sourceRoot = unixStylePath(path.join(path.relative(path.dirname(destSourceMapPath), file.base), sourceMap.sourceRoot));
+			}
+		} else {
+			// best effort, can be incorrect if options.destPath not set
+			sourceMap.file = unixStylePath(path.relative(path.dirname(sourceMapPath), file.path));
+			if (sourceMap.sourceRoot === '' || (sourceMap.sourceRoot && sourceMap.sourceRoot[0] === '.')) {
+				sourceMap.sourceRoot = unixStylePath(path.join(path.relative(path.dirname(sourceMapPath), file.base), sourceMap.sourceRoot));
+			}
+		}
+
+		// add new source map file to stream
+		var sourceMapFile = new File({
+			cwd: file.cwd,
+			base: file.base,
+			path: sourceMapPath,
+			contents: new Buffer(JSON.stringify(sourceMap)),
+			stat: {
+				isFile: function () {
+					return true;
+				},
+				isDirectory: function () {
+					return false;
+				},
+				isBlockDevice: function () {
+					return false;
+				},
+				isCharacterDevice: function () {
+					return false;
+				},
+				isSymbolicLink: function () {
+					return false;
+				},
+				isFIFO: function () {
+					return false;
+				},
+				isSocket: function () {
+					return false;
+				}
+			}
+		});
+
+		arr.push(sourceMapFile);
+
+		var sourceMapPathRelative = path.relative(path.dirname(file.path), sourceMapPath);
+
+		if (options.sourceMappingURLPrefix) {
+			var prefix = '';
+			if (typeof options.sourceMappingURLPrefix === 'function') {
+				prefix = options.sourceMappingURLPrefix(file);
+			} else {
+				prefix = options.sourceMappingURLPrefix;
+			}
+			sourceMapPathRelative = prefix+path.join('/', sourceMapPathRelative);
+		}
+		comment = commentFormatter(unixStylePath(sourceMapPathRelative));
+
+		if (options.sourceMappingURL && typeof options.sourceMappingURL === 'function') {
+			comment = commentFormatter(options.sourceMappingURL(file));
+		}
+	}
+
+	// append source map comment
+	if (options.addComment) {
+		file.contents = Buffer.concat([file.contents, new Buffer(comment)]);
+	}
+
+	arr.unshift(file);
+
+	return arr;
 
 }
 
-module.exports.processFile = processFile;
+/*
+ * Add a sourcemap to a vinyl file (async, with callback)
+ * @param file
+ * @param options
+ * @param cb
+ */
+module.exports.add = function add (file, options, cb) {
 
-module.exports.src = function src (options) {
-
-	function sourceMapSrc (file, enc, cb) {
-
-		if (!options) {
-			options = {};
-		}
-
-		this.push(processFile(file, options));
-		cb();
-
+	// check if options are passed or a callback as second argument
+	// if there are 3 arguments, the options param should be an object
+	if (typeof options === 'function') {
+		cb = options;
+		options = {};
+	} else if (!options || typeof options !== 'object') {
+		return cb(new Error(PLUGIN_NAME + '-add: Invalid argument: options'));
 	}
 
-	return through.obj(sourceMapSrc);
+	// Throw an error if the file argument is not a vinyl file
+	if (!File.isVinyl(file)) {
+		return cb(new Error(PLUGIN_NAME + '-add: Not a vinyl file'));
+	}
 
+	// Return the file if already has sourcemaps
+	if (file.sourceMap) {
+		return cb(null, file);
+	}
+
+	cb(null, addSourcemap(file, options, 'add'));
+
+};
+
+/*
+ * Add a sourcemap to a vinyl file
+ * @param file
+ * @param options
+ */
+module.exports.addSync = function addSync (file, options) {
+
+	// Throw an error if the file argument is not a vinyl file
+	if (!File.isVinyl(file)) {
+		throw new Error(PLUGIN_NAME + '-addSync: Not a vinyl file');
+	}
+
+	// Return the file if already has sourcemaps
+	if (file.sourceMap) {
+		return file;
+	}
+
+	// check if options are passed or assign empty object to prevent js errors
+	if (options === undefined) {
+		options = {};
+	}
+
+	return addSourcemap(file, options, 'addSync');
+
+};
+
+/*
+ * Write the sourcemap (async, with callback)
+ * @param file
+ * @param destPath
+ * @param options
+ * @param cb
+ */
+module.exports.write = function write (file, destPath, options, cb) {
+
+	// Check arguments for optional destPath, options, or callback function
+	if (cb === undefined && typeof destPath === 'function') {
+		cb = destPath;
+		destPath = undefined;
+	}	else if (cb === undefined && typeof options === 'function') {
+		cb = options;
+		if (Object.prototype.toString.call(destPath) === '[object Object]') {
+			options = destPath;
+			destPath = undefined;
+		} else if (typeof destPath === 'string') {
+			options = {};
+		} else {
+			return cb(new Error(PLUGIN_NAME + '-write: Invalid arguments'));
+		}
+	} else if (Object.prototype.toString.call(options) !== '[object Object]') {
+		return cb(new Error(PLUGIN_NAME + '-write: Invalid argument: options'));
+	}
+
+	try {
+		cb(null, writeSourcemap(file, destPath, options, 'write'));
+	} catch (err) {
+		cb(err);
+	}
+};
+
+/*
+ * Write the sourcemap
+ * @param file
+ * @param destPath
+ * @param options
+ */
+module.exports.writeSync = function write (file, destPath, options) {
+
+	if (options === undefined && Object.prototype.toString.call(destPath) === '[object Object]') {
+		options = destPath;
+		destPath = undefined;
+	}
+
+	return writeSourcemap(file, destPath, options, 'writeSync');
 };

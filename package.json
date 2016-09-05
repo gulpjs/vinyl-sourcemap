@@ -1,7 +1,7 @@
 {
-  "name": "vinyl-sourcemaps",
+  "name": "vinyl-sourcemap",
   "version": "1.0.0",
-  "description": "Sourcemap support for vinyl-fs, extracted from the gulp-sourcemaps project by Florian Reiterer (https://github.com/floridoo/gulp-sourcemaps)",
+  "description": "Add sourcemaps to vinyl files, extracted from gulp-sourcemaps by Florian Reiterer (https://github.com/floridoo/gulp-sourcemaps)",
   "main": "index.js",
   "scripts": {
     "test": "eslint *.js test/*.js && faucet test/*.js",
@@ -9,10 +9,12 @@
   },
   "keywords": [
     "vinyl",
-    "sourcemaps"
+    "sourcemap",
+    "gulp"
   ],
   "author": "Robin Venneman",
   "license": "MIT",
+  "repository": "github:robinvenneman/vinyl-sourcemap",
   "devDependencies": {
     "eslint": "^3.4.0",
     "eslint-config-gulp": "github:robinvenneman/eslint-config-gulp",
@@ -22,6 +24,9 @@
     "vinyl-fs": "^2.4.3"
   },
   "dependencies": {
+    "css": "^2.2.1",
+    "detect-newline": "^2.1.0",
+    "graceful-fs": "^4.1.6",
     "source-map": "^0.5.6",
     "through2": "^2.0.1",
     "vinyl": "^1.2.0"
