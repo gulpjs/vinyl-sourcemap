@@ -17,7 +17,33 @@ function unixStylePath (filePath) {
 	return filePath.split(path.sep).join('/');
 }
 
-function addSourcemap (file, options, caller) {
+/**
+ * Add a sourcemap to a vinyl file (async, with callback function)
+ * @param file
+ * @param options
+ * @param cb
+ */
+module.exports.add = function add (file, options, cb) {
+
+	// check if options are passed or a callback as second argument
+	// if there are 3 arguments, the options param should be an object
+	if (typeof options === 'function') {
+		cb = options;
+		options = {};
+	} else if (!options || typeof options !== 'object') {
+		return cb(new Error(PLUGIN_NAME + '-add: Invalid argument: options'));
+	}
+
+	// Throw an error if the file argument is not a vinyl file
+	if (!File.isVinyl(file)) {
+		return cb(new Error(PLUGIN_NAME + '-add: Not a vinyl file'));
+	}
+
+	// Return the file if already has sourcemaps
+	if (file.sourceMap) {
+		return cb(null, file);
+	}
+
 	var fileContent = file.contents.toString();
 	var sourceMap;
 
@@ -83,12 +109,12 @@ function addSourcemap (file, options, caller) {
 
 						try {
 							if (options.debug) {
-								console.log(PLUGIN_NAME + '-' + caller + ': No source content for "' + source + '". Loading from file.');
+								console.log(PLUGIN_NAME + '-add: No source content for "' + source + '". Loading from file.');
 							}
 							sourceContent = stripBom(fs.readFileSync(absPath, 'utf8'));
 						} catch (e) {
 							if (options.debug) {
-								console.warn(PLUGIN_NAME + '-' + caller + ': source file not found: ' + absPath);
+								console.warn(PLUGIN_NAME + '-add: source file not found: ' + absPath);
 							}
 						}
 					}
@@ -165,15 +191,43 @@ function addSourcemap (file, options, caller) {
 
 	sourceMap.file = unixStylePath(file.relative);
 	file.sourceMap = sourceMap;
-	return file;
-}
 
-function writeSourcemap (file, destPath, options, caller) {
+	cb(null, file);
+
+};
+
+/**
+ * Write the sourcemap (async, with callback function)
+ * @param file
+ * @param destPath
+ * @param options
+ * @param cb
+ */
+module.exports.write = function write (file, destPath, options, cb) {
+
+	// Check arguments for optional destPath, options, or callback function
+	if (cb === undefined && typeof destPath === 'function') {
+		cb = destPath;
+		destPath = undefined;
+	}	else if (cb === undefined && typeof options === 'function') {
+		cb = options;
+		if (Object.prototype.toString.call(destPath) === '[object Object]') {
+			options = destPath;
+			destPath = undefined;
+		} else if (typeof destPath === 'string') {
+			options = {};
+		} else {
+			return cb(new Error(PLUGIN_NAME + '-write: Invalid arguments'));
+		}
+	} else if (Object.prototype.toString.call(options) !== '[object Object]') {
+		return cb(new Error(PLUGIN_NAME + '-write: Invalid argument: options'));
+	}
+
 	options = options || {};
 
 	// Throw an error if the file argument is not a vinyl file
 	if (!File.isVinyl(file)) {
-		throw new Error(PLUGIN_NAME + '-' + caller + ': Not a vinyl file');
+		return cb(new Error(PLUGIN_NAME + '-write: Not a vinyl file'));
 	}
 
 	// return array with file & optionally sourcemap file
@@ -194,7 +248,7 @@ function writeSourcemap (file, destPath, options, caller) {
 
 	// Throw an error if the file doesn't have a sourcemap
 	if (!file.sourceMap) {
-		throw new Error(PLUGIN_NAME + '-' + caller + ': No sourcemap found');
+		return cb(new Error(PLUGIN_NAME + '-write: No sourcemap found'));
 	}
 
 	// fix paths if Windows style paths
@@ -228,12 +282,12 @@ function writeSourcemap (file, destPath, options, caller) {
 				var sourcePath = path.resolve(sourceMap.sourceRoot || file.base, sourceMap.sources[i]);
 				try {
 					if (options.debug) {
-						console.log(PLUGIN_NAME + '-' + caller + ': No source content for "' + sourceMap.sources[i] + '". Loading from file.');
+						console.log(PLUGIN_NAME + '-write: No source content for "' + sourceMap.sources[i] + '". Loading from file.');
 					}
 					sourceMap.sourcesContent[i] = stripBom(fs.readFileSync(sourcePath, 'utf8'));
 				} catch (e) {
 					if (options.debug) {
-						console.warn(PLUGIN_NAME + '-' + caller + ': source file not found: ' + sourcePath);
+						console.warn(PLUGIN_NAME + '-write: source file not found: ' + sourcePath);
 					}
 				}
 			}
@@ -258,12 +312,12 @@ function writeSourcemap (file, destPath, options, caller) {
 			};
 			break;
 		default:
-			commentFormatter = function(url) {
+			commentFormatter = function() {
 				return '';
 			};
 	}
 
-	var comment, sourceMappingURLPrefix;
+	var comment;
 	if (destPath === undefined || destPath === null) {
 		// encode source map into comment
 		var base64Map = new Buffer(JSON.stringify(sourceMap)).toString('base64');
@@ -353,113 +407,6 @@ function writeSourcemap (file, destPath, options, caller) {
 
 	arr.unshift(file);
 
-	return arr;
+	cb(null, arr);
 
-}
-
-/*
- * Add a sourcemap to a vinyl file (async, with callback)
- * @param file
- * @param options
- * @param cb
- */
-module.exports.add = function add (file, options, cb) {
-
-	// check if options are passed or a callback as second argument
-	// if there are 3 arguments, the options param should be an object
-	if (typeof options === 'function') {
-		cb = options;
-		options = {};
-	} else if (!options || typeof options !== 'object') {
-		return cb(new Error(PLUGIN_NAME + '-add: Invalid argument: options'));
-	}
-
-	// Throw an error if the file argument is not a vinyl file
-	if (!File.isVinyl(file)) {
-		return cb(new Error(PLUGIN_NAME + '-add: Not a vinyl file'));
-	}
-
-	// Return the file if already has sourcemaps
-	if (file.sourceMap) {
-		return cb(null, file);
-	}
-
-	cb(null, addSourcemap(file, options, 'add'));
-
-};
-
-/*
- * Add a sourcemap to a vinyl file
- * @param file
- * @param options
- */
-module.exports.addSync = function addSync (file, options) {
-
-	// Throw an error if the file argument is not a vinyl file
-	if (!File.isVinyl(file)) {
-		throw new Error(PLUGIN_NAME + '-addSync: Not a vinyl file');
-	}
-
-	// Return the file if already has sourcemaps
-	if (file.sourceMap) {
-		return file;
-	}
-
-	// check if options are passed or assign empty object to prevent js errors
-	if (options === undefined) {
-		options = {};
-	}
-
-	return addSourcemap(file, options, 'addSync');
-
-};
-
-/*
- * Write the sourcemap (async, with callback)
- * @param file
- * @param destPath
- * @param options
- * @param cb
- */
-module.exports.write = function write (file, destPath, options, cb) {
-
-	// Check arguments for optional destPath, options, or callback function
-	if (cb === undefined && typeof destPath === 'function') {
-		cb = destPath;
-		destPath = undefined;
-	}	else if (cb === undefined && typeof options === 'function') {
-		cb = options;
-		if (Object.prototype.toString.call(destPath) === '[object Object]') {
-			options = destPath;
-			destPath = undefined;
-		} else if (typeof destPath === 'string') {
-			options = {};
-		} else {
-			return cb(new Error(PLUGIN_NAME + '-write: Invalid arguments'));
-		}
-	} else if (Object.prototype.toString.call(options) !== '[object Object]') {
-		return cb(new Error(PLUGIN_NAME + '-write: Invalid argument: options'));
-	}
-
-	try {
-		cb(null, writeSourcemap(file, destPath, options, 'write'));
-	} catch (err) {
-		cb(err);
-	}
-};
-
-/*
- * Write the sourcemap
- * @param file
- * @param destPath
- * @param options
- */
-module.exports.writeSync = function write (file, destPath, options) {
-
-	if (options === undefined && Object.prototype.toString.call(destPath) === '[object Object]') {
-		options = destPath;
-		destPath = undefined;
-	}
-
-	return writeSourcemap(file, destPath, options, 'writeSync');
 };
