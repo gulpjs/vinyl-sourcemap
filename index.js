@@ -47,40 +47,85 @@ module.exports.add = function add (file, options, cb) {
 	var fileContent = file.contents.toString();
 	var sourceMap;
 
+	var mapsLoaded = function () {
+
+		if (!sourceMap && options.identityMap) {
+			var fileType = path.extname(file.path);
+			var source = unixStylePath(file.relative);
+			var generator = new SourceMapGenerator({ file: source });
+			if (fileType === '.js') {
+				var tokenizer = acorn.tokenizer(fileContent, { locations: true });
+				while (true) {
+					var token = tokenizer.getToken();
+
+					if (token.type.label === 'eof') {
+						break;
+					}
+					var mapping = {
+						original: token.loc.start,
+						generated: token.loc.start,
+						source: source,
+					};
+					if (token.type.label === 'name') {
+						mapping.name = token.value;
+					}
+					generator.addMapping(mapping);
+				}
+				generator.setSourceContent(source, fileContent);
+				sourceMap = generator.toJSON();
+			} else if (fileType === '.css') {
+				var ast = css.parse(fileContent, { silent: true });
+				var registerTokens = function (ast) {
+					if (ast.position) {
+						generator.addMapping({
+							original: ast.position.start,
+							generated: ast.position.start,
+							source: source,
+						});
+					}
+					for (var key in ast) {
+						if (key !== 'position') {
+							if (Object.prototype.toString.call(ast[key]) === '[object Object]') {
+								registerTokens(ast[key]);
+							} else if (ast[key].constructor === Array) {
+								for (var i = 0; i < ast[key].length; i++) {
+									registerTokens(ast[key][i]);
+								}
+							}
+						}
+					}
+				};
+				registerTokens(ast);
+				generator.setSourceContent(source, fileContent);
+				sourceMap = generator.toJSON();
+			}
+		}
+
+		if (!sourceMap) {
+			sourceMap = {
+				version: 3,
+				names: [],
+				mappings: '',
+				sources: [unixStylePath(file.relative)],
+				sourcesContent: [fileContent]
+			};
+		}
+
+		sourceMap.file = unixStylePath(file.relative);
+		file.sourceMap = sourceMap;
+
+		cb(null, file);
+
+	};
+
 	if (options.loadMaps) {
 		var sourcePath = ''; //root path for the sources in the map
 
 		// Try to read inline source map
 		sourceMap = convert.fromSource(fileContent);
 
-		if (sourceMap) {
-			sourceMap = sourceMap.toObject();
-			// sources in map are relative to the source file
-			sourcePath = path.dirname(file.path);
-			fileContent = convert.removeComments(fileContent);
-		} else {
-			// look for source map comment referencing a source map file
-			var mapComment = convert.mapFileCommentRegex.exec(fileContent);
-
-			var mapFile;
-			if (mapComment) {
-				mapFile = path.resolve(path.dirname(file.path), mapComment[1] || mapComment[2]);
-				fileContent = convert.removeMapFileComments(fileContent);
-				// if no comment try map file with same name as source file
-			} else {
-				mapFile = file.path + '.map';
-			}
-
-			// sources in external map are relative to map file
-			sourcePath = path.dirname(mapFile);
-
-			try {
-				sourceMap = JSON.parse(stripBom(fs.readFileSync(mapFile, 'utf8')));
-			} catch (e) {}
-		}
-
 		// fix source paths and sourceContent for imported source map
-		if (sourceMap) {
+		var fixImportedSourceMap = function () {
 			sourceMap.sourcesContent = sourceMap.sourcesContent || [];
 			sourceMap.sources.forEach(function(source, i) {
 				if (source.match(urlRegex)) {
@@ -124,75 +169,57 @@ module.exports.add = function add (file, options, cb) {
 
 			// remove source map comment from source
 			file.contents = new Buffer(fileContent, 'utf8');
-		}
-	}
-
-	if (!sourceMap && options.identityMap) {
-		var fileType = path.extname(file.path);
-		var source = unixStylePath(file.relative);
-		var generator = new SourceMapGenerator({ file: source });
-		if (fileType === '.js') {
-			var tokenizer = acorn.tokenizer(fileContent, { locations: true });
-			while (true) {
-				var token = tokenizer.getToken();
-
-				if (token.type.label === 'eof') {
-					break;
-				}
-				var mapping = {
-					original: token.loc.start,
-					generated: token.loc.start,
-					source: source,
-				};
-				if (token.type.label === 'name') {
-					mapping.name = token.value;
-				}
-				generator.addMapping(mapping);
-			}
-			generator.setSourceContent(source, fileContent);
-			sourceMap = generator.toJSON();
-		} else if (fileType === '.css') {
-			var ast = css.parse(fileContent, { silent: true });
-			var registerTokens = function (ast) {
-				if (ast.position) {
-					generator.addMapping({
-						original: ast.position.start,
-						generated: ast.position.start,
-						source: source,
-					});
-				}
-				for (var key in ast) {
-					if (key !== 'position') {
-						if (Object.prototype.toString.call(ast[key]) === '[object Object]') {
-							registerTokens(ast[key]);
-						} else if (ast[key].constructor === Array) {
-							for (var i = 0; i < ast[key].length; i++) {
-								registerTokens(ast[key][i]);
-							}
-						}
-					}
-				}
-			};
-			registerTokens(ast);
-			generator.setSourceContent(source, fileContent);
-			sourceMap = generator.toJSON();
-		}
-	}
-
-	if (!sourceMap) {
-		sourceMap = {
-			version: 3,
-			names: [],
-			mappings: '',
-			sources: [unixStylePath(file.relative)],
-			sourcesContent: [fileContent]
 		};
+
+		if (sourceMap) {
+			sourceMap = sourceMap.toObject();
+			// sources in map are relative to the source file
+			sourcePath = path.dirname(file.path);
+			fileContent = convert.removeComments(fileContent);
+			fixImportedSourceMap();
+			mapsLoaded();
+		} else {
+			// look for source map comment referencing a source map file
+			var mapComment = convert.mapFileCommentRegex.exec(fileContent);
+
+			var mapFile;
+			if (mapComment) {
+				mapFile = path.resolve(path.dirname(file.path), mapComment[1] || mapComment[2]);
+				fileContent = convert.removeMapFileComments(fileContent);
+				// if no comment try map file with same name as source file
+			} else {
+				mapFile = file.path + '.map';
+			}
+
+			// sources in external map are relative to map file
+			sourcePath = path.dirname(mapFile);
+
+			var sourceMapLoaded = function (data) {
+				try {
+					sourceMap = JSON.parse(stripBom(data));
+				} catch (err) {}
+
+				if (sourceMap) {
+					fixImportedSourceMap();
+				}
+				mapsLoaded();
+			};
+
+			fs.readFile(mapFile, 'utf8', function (err, data) {
+				if (err) {
+					if (options.debug) {
+						console.log(PLUGIN_NAME + '-add: Can\'t read map file :' + mapFile);
+					}
+					return mapsLoaded();
+				}
+				sourceMapLoaded(data);
+			});
+
+		}
+
+	} else {
+		mapsLoaded();
 	}
-
-	sourceMap.file = unixStylePath(file.relative);
-	file.sourceMap = sourceMap;
-
-	cb(null, file);
 
 };
 
