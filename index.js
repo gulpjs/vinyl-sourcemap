@@ -137,6 +137,7 @@ module.exports.add = function add (file, options, cb) {
 						if (options.debug) {
 							console.warn(PLUGIN_NAME + '-add: source file not found: ' + absPath);
 						}
+						sourceMap.sourcesContent[i] = null;
 						return onLoaded();
 					}
 					sourceMap.sourcesContent[i] = stripBom(data);
