@@ -127,48 +127,70 @@ module.exports.add = function add (file, options, cb) {
 		// fix source paths and sourceContent for imported source map
 		var fixImportedSourceMap = function () {
 			sourceMap.sourcesContent = sourceMap.sourcesContent || [];
-			sourceMap.sources.forEach(function(source, i) {
+
+			var loadCounter = 0;
+			var loadSourceAsync = function (source, onLoaded) {
+				var i = source[0],
+					absPath = source[1];
+				fs.readFile(absPath, 'utf8', function (err, data) {
+					if (err) {
+						if (options.debug) {
+							console.warn(PLUGIN_NAME + '-add: source file not found: ' + absPath);
+						}
+						return onLoaded();
+					}
+					sourceMap.sourcesContent[i] = stripBom(data);
+					onLoaded();
+				});
+			};
+
+			var sourcesToLoadAsync = sourceMap.sources.reduce(function(result, source, i) {
 				if (source.match(urlRegex)) {
 					sourceMap.sourcesContent[i] = sourceMap.sourcesContent[i] || null;
-					return;
+					return result;
 				}
 				var absPath = path.resolve(sourcePath, source);
 				sourceMap.sources[i] = unixStylePath(path.relative(file.base, absPath));
-
 				if (!sourceMap.sourcesContent[i]) {
 					var sourceContent = null;
 					if (sourceMap.sourceRoot) {
 						if (sourceMap.sourceRoot.match(urlRegex)) {
 							sourceMap.sourcesContent[i] = null;
-							return;
+							return result;
 						}
 						absPath = path.resolve(sourcePath, sourceMap.sourceRoot, source);
 					}
-
-					// if current file: use content
 					if (absPath === file.path) {
+						// if current file: use content
 						sourceContent = fileContent;
-
-						// else load content from file
 					} else {
-
-						try {
-							if (options.debug) {
-								console.log(PLUGIN_NAME + '-add: No source content for "' + source + '". Loading from file.');
-							}
-							sourceContent = stripBom(fs.readFileSync(absPath, 'utf8'));
-						} catch (e) {
-							if (options.debug) {
-								console.warn(PLUGIN_NAME + '-add: source file not found: ' + absPath);
-							}
+						// else load content from file async
+						if (options.debug) {
+							console.log(PLUGIN_NAME + '-add: No source content for "' + source + '". Loading from file.');
 						}
+						result.push([i, absPath]);
+						return result;
 					}
 					sourceMap.sourcesContent[i] = sourceContent;
 				}
-			});
+				return result;
+			}, []);
 
 			// remove source map comment from source
 			file.contents = new Buffer(fileContent, 'utf8');
+
+			if (sourcesToLoadAsync.length) {
+				sourcesToLoadAsync.forEach(function(source) {
+					loadSourceAsync(source, function onLoaded () {
+						if (++loadCounter === sourcesToLoadAsync.length) {
+							mapsLoaded();
+						}
+					});
+				});
+			} else {
+				mapsLoaded();
+			}
+
 		};
 
 		if (sourceMap) {
@@ -177,7 +199,6 @@ module.exports.add = function add (file, options, cb) {
 			sourcePath = path.dirname(file.path);
 			fileContent = convert.removeComments(fileContent);
 			fixImportedSourceMap();
-			mapsLoaded();
 		} else {
 			// look for source map comment referencing a source map file
 			var mapComment = convert.mapFileCommentRegex.exec(fileContent);
@@ -200,7 +221,7 @@ module.exports.add = function add (file, options, cb) {
 				} catch (err) {}
 
 				if (sourceMap) {
-					fixImportedSourceMap();
+					return fixImportedSourceMap();
 				}
 				mapsLoaded();
 			};
