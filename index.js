@@ -322,140 +322,168 @@ module.exports.write = function write (file, destPath, options, cb) {
 		sourceMap.sourceRoot = undefined;
 	}
 
+	var contentIncluded = function() {
+
+		var extension = file.relative.split('.').pop();
+		var newline = detectNewline(file.contents.toString());
+		var commentFormatter;
+
+		switch (extension) {
+			case 'css':
+				commentFormatter = function(url) {
+					return newline + '/*# sourceMappingURL=' + url + ' */' + newline;
+				};
+				break;
+			case 'js':
+				commentFormatter = function(url) {
+					return newline + '//# sourceMappingURL=' + url + newline;
+				};
+				break;
+			default:
+				commentFormatter = function() {
+					return '';
+				};
+		}
+
+		var comment;
+		if (destPath === undefined || destPath === null) {
+			// encode source map into comment
+			var base64Map = new Buffer(JSON.stringify(sourceMap)).toString('base64');
+			comment = commentFormatter('data:application/json;charset=' + options.charset + ';base64,' + base64Map);
+		} else {
+			var mapFile = path.join(destPath, file.relative) + '.map';
+			// custom map file name
+			if (options.mapFile && typeof options.mapFile === 'function') {
+				mapFile = options.mapFile(mapFile);
+			}
+
+			var sourceMapPath = path.join(file.base, mapFile);
+
+			// if explicit destination path is set
+			if (options.destPath) {
+				var destSourceMapPath = path.join(file.cwd, options.destPath, mapFile);
+				var destFilePath = path.join(file.cwd, options.destPath, file.relative);
+				sourceMap.file = unixStylePath(path.relative(path.dirname(destSourceMapPath), destFilePath));
+				if (sourceMap.sourceRoot === undefined) {
+					sourceMap.sourceRoot = unixStylePath(path.relative(path.dirname(destSourceMapPath), file.base));
+				} else if (sourceMap.sourceRoot === '' || (sourceMap.sourceRoot && sourceMap.sourceRoot[0] === '.')) {
+					sourceMap.sourceRoot = unixStylePath(path.join(path.relative(path.dirname(destSourceMapPath), file.base), sourceMap.sourceRoot));
+				}
+			} else {
+				// best effort, can be incorrect if options.destPath not set
+				sourceMap.file = unixStylePath(path.relative(path.dirname(sourceMapPath), file.path));
+				if (sourceMap.sourceRoot === '' || (sourceMap.sourceRoot && sourceMap.sourceRoot[0] === '.')) {
+					sourceMap.sourceRoot = unixStylePath(path.join(path.relative(path.dirname(sourceMapPath), file.base), sourceMap.sourceRoot));
+				}
+			}
+
+			// add new source map file to stream
+			var sourceMapFile = new File({
+				cwd: file.cwd,
+				base: file.base,
+				path: sourceMapPath,
+				contents: new Buffer(JSON.stringify(sourceMap)),
+				stat: {
+					isFile: function () {
+						return true;
+					},
+					isDirectory: function () {
+						return false;
+					},
+					isBlockDevice: function () {
+						return false;
+					},
+					isCharacterDevice: function () {
+						return false;
+					},
+					isSymbolicLink: function () {
+						return false;
+					},
+					isFIFO: function () {
+						return false;
+					},
+					isSocket: function () {
+						return false;
+					}
+				}
+			});
+
+			arr.push(sourceMapFile);
+
+			var sourceMapPathRelative = path.relative(path.dirname(file.path), sourceMapPath);
+
+			if (options.sourceMappingURLPrefix) {
+				var prefix = '';
+				if (typeof options.sourceMappingURLPrefix === 'function') {
+					prefix = options.sourceMappingURLPrefix(file);
+				} else {
+					prefix = options.sourceMappingURLPrefix;
+				}
+				sourceMapPathRelative = prefix+path.join('/', sourceMapPathRelative);
+			}
+			comment = commentFormatter(unixStylePath(sourceMapPathRelative));
+
+			if (options.sourceMappingURL && typeof options.sourceMappingURL === 'function') {
+				comment = commentFormatter(options.sourceMappingURL(file));
+			}
+		}
+
+		// append source map comment
+		if (options.addComment) {
+			file.contents = Buffer.concat([file.contents, new Buffer(comment)]);
+		}
+
+		arr.unshift(file);
+
+		cb(null, arr);
+	};
+
 	if (options.includeContent) {
 		sourceMap.sourcesContent = sourceMap.sourcesContent || [];
 
-		// load missing source content
-		for (var i = 0; i < file.sourceMap.sources.length; i++) {
-			if (!sourceMap.sourcesContent[i]) {
-				var sourcePath = path.resolve(sourceMap.sourceRoot || file.base, sourceMap.sources[i]);
-				try {
-					if (options.debug) {
-						console.log(PLUGIN_NAME + '-write: No source content for "' + sourceMap.sources[i] + '". Loading from file.');
-					}
-					sourceMap.sourcesContent[i] = stripBom(fs.readFileSync(sourcePath, 'utf8'));
-				} catch (e) {
+		var loadCounter = 0;
+		var loadSourceAsync = function (source, onLoaded) {
+			var i = source[0],
+				sourcePath = source[1];
+			fs.readFile(sourcePath, 'utf8', function (err, data) {
+				if (err) {
 					if (options.debug) {
 						console.warn(PLUGIN_NAME + '-write: source file not found: ' + sourcePath);
 					}
+					return onLoaded();
 				}
+				sourceMap.sourcesContent[i] = stripBom(data);
+				onLoaded();
+			});
+		};
+
+		var sourcesToLoadAsync = file.sourceMap.sources.reduce(function(result, source, i) {
+			if (!sourceMap.sourcesContent[i]) {
+				var sourcePath = path.resolve(sourceMap.sourceRoot || file.base, sourceMap.sources[i]);
+				if (options.debug) {
+					console.log(PLUGIN_NAME + '-write: No source content for "' + sourceMap.sources[i] + '". Loading from file.');
+				}
+				result.push([i, sourcePath]);
 			}
+			return result;
+		}, []);
+
+		if (sourcesToLoadAsync.length) {
+			// load missing source content
+			sourcesToLoadAsync.forEach(function (source) {
+				loadSourceAsync(source, function onLoaded () {
+					if (++loadCounter === sourcesToLoadAsync.length) {
+						contentIncluded();
+					}
+				});
+			});
+		} else {
+			contentIncluded();
 		}
+
 	} else {
 		delete sourceMap.sourcesContent;
+		contentIncluded();
 	}
-
-	var extension = file.relative.split('.').pop();
-	var newline = detectNewline(file.contents.toString());
-	var commentFormatter;
-
-	switch (extension) {
-		case 'css':
-			commentFormatter = function(url) {
-				return newline + '/*# sourceMappingURL=' + url + ' */' + newline;
-			};
-			break;
-		case 'js':
-			commentFormatter = function(url) {
-				return newline + '//# sourceMappingURL=' + url + newline;
-			};
-			break;
-		default:
-			commentFormatter = function() {
-				return '';
-			};
-	}
-
-	var comment;
-	if (destPath === undefined || destPath === null) {
-		// encode source map into comment
-		var base64Map = new Buffer(JSON.stringify(sourceMap)).toString('base64');
-		comment = commentFormatter('data:application/json;charset=' + options.charset + ';base64,' + base64Map);
-	} else {
-		var mapFile = path.join(destPath, file.relative) + '.map';
-		// custom map file name
-		if (options.mapFile && typeof options.mapFile === 'function') {
-			mapFile = options.mapFile(mapFile);
-		}
-
-		var sourceMapPath = path.join(file.base, mapFile);
-
-		// if explicit destination path is set
-		if (options.destPath) {
-			var destSourceMapPath = path.join(file.cwd, options.destPath, mapFile);
-			var destFilePath = path.join(file.cwd, options.destPath, file.relative);
-			sourceMap.file = unixStylePath(path.relative(path.dirname(destSourceMapPath), destFilePath));
-			if (sourceMap.sourceRoot === undefined) {
-				sourceMap.sourceRoot = unixStylePath(path.relative(path.dirname(destSourceMapPath), file.base));
-			} else if (sourceMap.sourceRoot === '' || (sourceMap.sourceRoot && sourceMap.sourceRoot[0] === '.')) {
-				sourceMap.sourceRoot = unixStylePath(path.join(path.relative(path.dirname(destSourceMapPath), file.base), sourceMap.sourceRoot));
-			}
-		} else {
-			// best effort, can be incorrect if options.destPath not set
-			sourceMap.file = unixStylePath(path.relative(path.dirname(sourceMapPath), file.path));
-			if (sourceMap.sourceRoot === '' || (sourceMap.sourceRoot && sourceMap.sourceRoot[0] === '.')) {
-				sourceMap.sourceRoot = unixStylePath(path.join(path.relative(path.dirname(sourceMapPath), file.base), sourceMap.sourceRoot));
-			}
-		}
-
-		// add new source map file to stream
-		var sourceMapFile = new File({
-			cwd: file.cwd,
-			base: file.base,
-			path: sourceMapPath,
-			contents: new Buffer(JSON.stringify(sourceMap)),
-			stat: {
-				isFile: function () {
-					return true;
-				},
-				isDirectory: function () {
-					return false;
-				},
-				isBlockDevice: function () {
-					return false;
-				},
-				isCharacterDevice: function () {
-					return false;
-				},
-				isSymbolicLink: function () {
-					return false;
-				},
-				isFIFO: function () {
-					return false;
-				},
-				isSocket: function () {
-					return false;
-				}
-			}
-		});
-
-		arr.push(sourceMapFile);
-
-		var sourceMapPathRelative = path.relative(path.dirname(file.path), sourceMapPath);
-
-		if (options.sourceMappingURLPrefix) {
-			var prefix = '';
-			if (typeof options.sourceMappingURLPrefix === 'function') {
-				prefix = options.sourceMappingURLPrefix(file);
-			} else {
-				prefix = options.sourceMappingURLPrefix;
-			}
-			sourceMapPathRelative = prefix+path.join('/', sourceMapPathRelative);
-		}
-		comment = commentFormatter(unixStylePath(sourceMapPathRelative));
-
-		if (options.sourceMappingURL && typeof options.sourceMappingURL === 'function') {
-			comment = commentFormatter(options.sourceMappingURL(file));
-		}
-	}
-
-	// append source map comment
-	if (options.addComment) {
-		file.contents = Buffer.concat([file.contents, new Buffer(comment)]);
-	}
-
-	arr.unshift(file);
-
-	cb(null, arr);
 
 };
