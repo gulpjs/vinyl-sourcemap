@@ -9,6 +9,7 @@ var SourceMapGenerator = require('source-map').SourceMapGenerator;
 var css = require('css');
 var fs = require('graceful-fs');
 var detectNewline = require('detect-newline');
+var async = require("async");
 
 var PLUGIN_NAME = 'vinyl-sourcemap';
 var urlRegex = /^(https?|webpack(-[^:]+)?):\/\//;
@@ -47,7 +48,130 @@ module.exports.add = function add (file, options, cb) {
 	var fileContent = file.contents.toString();
 	var sourceMap;
 
-	var mapsLoaded = function () {
+	var loadMaps = function (callback) {
+
+		var sourcePath = ''; //root path for the sources in the map
+
+		// Try to read inline source map
+		sourceMap = convert.fromSource(fileContent);
+
+		// fix source paths and sourceContent for imported source map
+		var fixImportedSourceMap = function () {
+			sourceMap.sourcesContent = sourceMap.sourcesContent || [];
+
+			var loadCounter = 0;
+			var loadSourceAsync = function (source, onLoaded) {
+				var i = source[0],
+					absPath = source[1];
+				fs.readFile(absPath, 'utf8', function (err, data) {
+					if (err) {
+						if (options.debug) {
+							console.warn(PLUGIN_NAME + '-add: source file not found: ' + absPath);
+						}
+						sourceMap.sourcesContent[i] = null;
+						return onLoaded();
+					}
+					sourceMap.sourcesContent[i] = stripBom(data);
+					onLoaded();
+				});
+			};
+
+			var sourcesToLoadAsync = sourceMap.sources.reduce(function(result, source, i) {
+				if (source.match(urlRegex)) {
+					sourceMap.sourcesContent[i] = sourceMap.sourcesContent[i] || null;
+					return result;
+				}
+				var absPath = path.resolve(sourcePath, source);
+				sourceMap.sources[i] = unixStylePath(path.relative(file.base, absPath));
+				if (!sourceMap.sourcesContent[i]) {
+					var sourceContent = null;
+					if (sourceMap.sourceRoot) {
+						if (sourceMap.sourceRoot.match(urlRegex)) {
+							sourceMap.sourcesContent[i] = null;
+							return result;
+						}
+						absPath = path.resolve(sourcePath, sourceMap.sourceRoot, source);
+					}
+					if (absPath === file.path) {
+						// if current file: use content
+						sourceContent = fileContent;
+					} else {
+						// else load content from file async
+						if (options.debug) {
+							console.log(PLUGIN_NAME + '-add: No source content for "' + source + '". Loading from file.');
+						}
+						result.push([i, absPath]);
+						return result;
+					}
+					sourceMap.sourcesContent[i] = sourceContent;
+				}
+				return result;
+			}, []);
+
+			// remove source map comment from source
+			file.contents = new Buffer(fileContent, 'utf8');
+
+			if (sourcesToLoadAsync.length) {
+				sourcesToLoadAsync.forEach(function(source) {
+					loadSourceAsync(source, function onLoaded () {
+						if (++loadCounter === sourcesToLoadAsync.length) {
+							callback(null);
+						}
+					});
+				});
+			} else {
+				callback(null);
+			}
+
+		};
+
+		if (sourceMap) {
+			sourceMap = sourceMap.toObject();
+			// sources in map are relative to the source file
+			sourcePath = path.dirname(file.path);
+			fileContent = convert.removeComments(fileContent);
+			fixImportedSourceMap();
+		} else {
+			// look for source map comment referencing a source map file
+			var mapComment = convert.mapFileCommentRegex.exec(fileContent);
+
+			var mapFile;
+			if (mapComment) {
+				mapFile = path.resolve(path.dirname(file.path), mapComment[1] || mapComment[2]);
+				fileContent = convert.removeMapFileComments(fileContent);
+				// if no comment try map file with same name as source file
+			} else {
+				mapFile = file.path + '.map';
+			}
+
+			// sources in external map are relative to map file
+			sourcePath = path.dirname(mapFile);
+
+			var sourceMapLoaded = function (data) {
+				try {
+					sourceMap = JSON.parse(stripBom(data));
+				} catch (err) {}
+
+				if (sourceMap) {
+					return fixImportedSourceMap();
+				}
+				callback(null);
+			};
+
+			fs.readFile(mapFile, 'utf8', function (err, data) {
+				if (err) {
+					if (options.debug) {
+						console.log(PLUGIN_NAME + '-add: Can\'t read map file :' + mapFile);
+					}
+					return callback(null);
+				}
+				sourceMapLoaded(data);
+			});
+
+		}
+	};
+
+	var mapsLoaded = function (callback) {
 
 		if (!sourceMap && options.identityMap) {
 			var fileType = path.extname(file.path);
@@ -114,134 +238,15 @@ module.exports.add = function add (file, options, cb) {
 		sourceMap.file = unixStylePath(file.relative);
 		file.sourceMap = sourceMap;
 
-		cb(null, file);
+		callback(null, file);
 
 	};
 
+	var asyncTasks = [mapsLoaded];
 	if (options.loadMaps) {
-		var sourcePath = ''; //root path for the sources in the map
-
-		// Try to read inline source map
-		sourceMap = convert.fromSource(fileContent);
-
-		// fix source paths and sourceContent for imported source map
-		var fixImportedSourceMap = function () {
-			sourceMap.sourcesContent = sourceMap.sourcesContent || [];
-
-			var loadCounter = 0;
-			var loadSourceAsync = function (source, onLoaded) {
-				var i = source[0],
-					absPath = source[1];
-				fs.readFile(absPath, 'utf8', function (err, data) {
-					if (err) {
-						if (options.debug) {
-							console.warn(PLUGIN_NAME + '-add: source file not found: ' + absPath);
-						}
-						sourceMap.sourcesContent[i] = null;
-						return onLoaded();
-					}
-					sourceMap.sourcesContent[i] = stripBom(data);
-					onLoaded();
-				});
-			};
-
-			var sourcesToLoadAsync = sourceMap.sources.reduce(function(result, source, i) {
-				if (source.match(urlRegex)) {
-					sourceMap.sourcesContent[i] = sourceMap.sourcesContent[i] || null;
-					return result;
-				}
-				var absPath = path.resolve(sourcePath, source);
-				sourceMap.sources[i] = unixStylePath(path.relative(file.base, absPath));
-				if (!sourceMap.sourcesContent[i]) {
-					var sourceContent = null;
-					if (sourceMap.sourceRoot) {
-						if (sourceMap.sourceRoot.match(urlRegex)) {
-							sourceMap.sourcesContent[i] = null;
-							return result;
-						}
-						absPath = path.resolve(sourcePath, sourceMap.sourceRoot, source);
-					}
-					if (absPath === file.path) {
-						// if current file: use content
-						sourceContent = fileContent;
-					} else {
-						// else load content from file async
-						if (options.debug) {
-							console.log(PLUGIN_NAME + '-add: No source content for "' + source + '". Loading from file.');
-						}
-						result.push([i, absPath]);
-						return result;
-					}
-					sourceMap.sourcesContent[i] = sourceContent;
-				}
-				return result;
-			}, []);
-
-			// remove source map comment from source
-			file.contents = new Buffer(fileContent, 'utf8');
-
-			if (sourcesToLoadAsync.length) {
-				sourcesToLoadAsync.forEach(function(source) {
-					loadSourceAsync(source, function onLoaded () {
-						if (++loadCounter === sourcesToLoadAsync.length) {
-							mapsLoaded();
-						}
-					});
-				});
-			} else {
-				mapsLoaded();
-			}
-
-		};
-
-		if (sourceMap) {
-			sourceMap = sourceMap.toObject();
-			// sources in map are relative to the source file
-			sourcePath = path.dirname(file.path);
-			fileContent = convert.removeComments(fileContent);
-			fixImportedSourceMap();
-		} else {
-			// look for source map comment referencing a source map file
-			var mapComment = convert.mapFileCommentRegex.exec(fileContent);
-
-			var mapFile;
-			if (mapComment) {
-				mapFile = path.resolve(path.dirname(file.path), mapComment[1] || mapComment[2]);
-				fileContent = convert.removeMapFileComments(fileContent);
-				// if no comment try map file with same name as source file
-			} else {
-				mapFile = file.path + '.map';
-			}
-
-			// sources in external map are relative to map file
-			sourcePath = path.dirname(mapFile);
-
-			var sourceMapLoaded = function (data) {
-				try {
-					sourceMap = JSON.parse(stripBom(data));
-				} catch (err) {}
-
-				if (sourceMap) {
-					return fixImportedSourceMap();
-				}
-				mapsLoaded();
-			};
-
-			fs.readFile(mapFile, 'utf8', function (err, data) {
-				if (err) {
-					if (options.debug) {
-						console.log(PLUGIN_NAME + '-add: Can\'t read map file :' + mapFile);
-					}
-					return mapsLoaded();
-				}
-				sourceMapLoaded(data);
-			});
-
-		}
-
-	} else {
-		mapsLoaded();
+		asyncTasks.unshift(loadMaps);
 	}
+	async.waterfall(asyncTasks, cb);
 
 };
 
