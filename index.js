@@ -329,7 +329,51 @@ module.exports.write = function write (file, destPath, options, cb) {
 		sourceMap.sourceRoot = undefined;
 	}
 
-	var contentIncluded = function() {
+	var includeContent = function (callback) {
+		sourceMap.sourcesContent = sourceMap.sourcesContent || [];
+
+		var loadCounter = 0;
+		var loadSourceAsync = function (source, onLoaded) {
+			var i = source[0],
+				sourcePath = source[1];
+			fs.readFile(sourcePath, 'utf8', function (err, data) {
+				if (err) {
+					if (options.debug) {
+						console.warn(PLUGIN_NAME + '-write: source file not found: ' + sourcePath);
+					}
+					return onLoaded();
+				}
+				sourceMap.sourcesContent[i] = stripBom(data);
+				onLoaded();
+			});
+		};
+
+		var sourcesToLoadAsync = file.sourceMap.sources.reduce(function(result, source, i) {
+			if (!sourceMap.sourcesContent[i]) {
+				var sourcePath = path.resolve(sourceMap.sourceRoot || file.base, sourceMap.sources[i]);
+				if (options.debug) {
+					console.log(PLUGIN_NAME + '-write: No source content for "' + sourceMap.sources[i] + '". Loading from file.');
+				}
+				result.push([i, sourcePath]);
+			}
+			return result;
+		}, []);
+
+		if (sourcesToLoadAsync.length) {
+			// load missing source content
+			sourcesToLoadAsync.forEach(function (source) {
+				loadSourceAsync(source, function onLoaded () {
+					if (++loadCounter === sourcesToLoadAsync.length) {
+						callback();
+					}
+				});
+			});
+		} else {
+			callback();
+		}
+	};
+
+	var contentIncluded = function (callback) {
 
 		var extension = file.relative.split('.').pop();
 		var newline = detectNewline(file.contents.toString());
@@ -442,55 +486,15 @@ module.exports.write = function write (file, destPath, options, cb) {
 
 		arr.unshift(file);
 
-		cb(null, arr);
+		callback(null, arr);
 	};
 
+	var asyncTasks = [contentIncluded];
 	if (options.includeContent) {
-		sourceMap.sourcesContent = sourceMap.sourcesContent || [];
-
-		var loadCounter = 0;
-		var loadSourceAsync = function (source, onLoaded) {
-			var i = source[0],
-				sourcePath = source[1];
-			fs.readFile(sourcePath, 'utf8', function (err, data) {
-				if (err) {
-					if (options.debug) {
-						console.warn(PLUGIN_NAME + '-write: source file not found: ' + sourcePath);
-					}
-					return onLoaded();
-				}
-				sourceMap.sourcesContent[i] = stripBom(data);
-				onLoaded();
-			});
-		};
-
-		var sourcesToLoadAsync = file.sourceMap.sources.reduce(function(result, source, i) {
-			if (!sourceMap.sourcesContent[i]) {
-				var sourcePath = path.resolve(sourceMap.sourceRoot || file.base, sourceMap.sources[i]);
-				if (options.debug) {
-					console.log(PLUGIN_NAME + '-write: No source content for "' + sourceMap.sources[i] + '". Loading from file.');
-				}
-				result.push([i, sourcePath]);
-			}
-			return result;
-		}, []);
-
-		if (sourcesToLoadAsync.length) {
-			// load missing source content
-			sourcesToLoadAsync.forEach(function (source) {
-				loadSourceAsync(source, function onLoaded () {
-					if (++loadCounter === sourcesToLoadAsync.length) {
-						contentIncluded();
-					}
-				});
-			});
-		} else {
-			contentIncluded();
-		}
-
+		asyncTasks.unshift(includeContent);
 	} else {
 		delete sourceMap.sourcesContent;
-		contentIncluded();
 	}
+	async.waterfall(asyncTasks, cb);
 
 };
