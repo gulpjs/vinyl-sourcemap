@@ -9,7 +9,7 @@ var SourceMapGenerator = require('source-map').SourceMapGenerator;
 var css = require('css');
 var fs = require('graceful-fs');
 var detectNewline = require('detect-newline');
-var async = require("async");
+var async = require('async');
 
 var PLUGIN_NAME = 'vinyl-sourcemap';
 var urlRegex = /^(https?|webpack(-[^:]+)?):\/\//;
@@ -125,13 +125,7 @@ module.exports.add = function add (file, options, cb) {
 
 		};
 
-		if (sourceMap) {
-			sourceMap = sourceMap.toObject();
-			// sources in map are relative to the source file
-			sourcePath = path.dirname(file.path);
-			fileContent = convert.removeComments(fileContent);
-			fixImportedSourceMap();
-		} else {
+		var loadSourceMap = function (callback) {
 			// look for source map comment referencing a source map file
 			var mapComment = convert.mapFileCommentRegex.exec(fileContent);
 
@@ -151,11 +145,7 @@ module.exports.add = function add (file, options, cb) {
 				try {
 					sourceMap = JSON.parse(stripBom(data));
 				} catch (err) {}
-
-				if (sourceMap) {
-					return fixImportedSourceMap();
-				}
-				callback(null);
+				callback();
 			};
 
 			fs.readFile(mapFile, 'utf8', function (err, data) {
@@ -163,12 +153,24 @@ module.exports.add = function add (file, options, cb) {
 					if (options.debug) {
 						console.log(PLUGIN_NAME + '-add: Can\'t read map file :' + mapFile);
 					}
-					return callback(null);
+					return callback();
 				}
 				sourceMapLoaded(data);
 			});
 
+		};
+
+		var asyncTasks = [fixImportedSourceMap];
+		if (sourceMap) {
+			sourceMap = sourceMap.toObject();
+			// sources in map are relative to the source file
+			sourcePath = path.dirname(file.path);
+			fileContent = convert.removeComments(fileContent);
+		} else {
+			asyncTasks.unshift(loadSourceMap);
 		}
+		async.waterfall(asyncTasks, callback);
+
 	};
 
 	var mapsLoaded = function (callback) {
