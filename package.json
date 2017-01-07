@@ -14,7 +14,7 @@
   ],
   "author": "Robin Venneman",
   "license": "MIT",
-  "repository": "github:robinvenneman/vinyl-sourcemap",
+  "repository": "github:gulpjs/vinyl-sourcemap",
   "devDependencies": {
     "eslint": "^3.4.0",
     "eslint-config-gulp": "github:robinvenneman/eslint-config-gulp",
