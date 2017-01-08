@@ -18,6 +18,29 @@ function unixStylePath (filePath) {
 	return filePath.split(path.sep).join('/');
 }
 
+function registerTokens (ast, generator, source) {
+	if (ast.position) {
+		generator.addMapping({
+			original: ast.position.start,
+			generated: ast.position.start,
+			source: source
+		});
+	}
+	for (var key in ast) {
+		if (key === 'position' || !ast[key]) {
+			break;
+		} else {
+			if (ast[key] instanceof Array) {
+				for (var i = 0; i < ast[key].length; i++) {
+					registerTokens(ast[key][i], generator, source);
+				}
+			} else if (typeof ast[key] === 'object') {
+				registerTokens(ast[key], generator, source);
+			}
+		}
+	}
+}
+
 /**
  * Add a sourcemap to a vinyl file (async, with callback function)
  * @param file
@@ -201,27 +224,7 @@ module.exports.add = function add (file, options, cb) {
 				sourceMap = generator.toJSON();
 			} else if (fileType === '.css') {
 				var ast = css.parse(fileContent, { silent: true });
-				var registerTokens = function (ast) {
-					if (ast.position) {
-						generator.addMapping({
-							original: ast.position.start,
-							generated: ast.position.start,
-							source: source,
-						});
-					}
-					for (var key in ast) {
-						if (key !== 'position') {
-							if (Object.prototype.toString.call(ast[key]) === '[object Object]') {
-								registerTokens(ast[key]);
-							} else if (ast[key].constructor === Array) {
-								for (var i = 0; i < ast[key].length; i++) {
-									registerTokens(ast[key][i]);
-								}
-							}
-						}
-					}
-				};
-				registerTokens(ast);
+				registerTokens(ast, generator, source);
 				generator.setSourceContent(source, fileContent);
 				sourceMap = generator.toJSON();
 			}
