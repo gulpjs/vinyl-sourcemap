@@ -18,27 +18,27 @@ function unixStylePath (filePath) {
 	return filePath.split(path.sep).join('/');
 }
 
-function registerTokens (ast, generator, source) {
-	if (ast.position) {
-		generator.addMapping({
-			original: ast.position.start,
-			generated: ast.position.start,
-			source: source
-		});
-	}
-	for (var key in ast) {
-		if (key === 'position' || !ast[key]) {
-			break;
-		} else {
-			if (ast[key] instanceof Array) {
-				for (var i = 0; i < ast[key].length; i++) {
-					registerTokens(ast[key][i], generator, source);
+function addCSSMappings (ast, generator, source) {
+	(function registerTokens (ast) {
+		if (ast.position) {
+			generator.addMapping({
+				original: ast.position.start,
+				generated: ast.position.start,
+				source: source
+			});
+		}
+		for (var key in ast) {
+			if (key === 'position' || !ast[key]) {
+				break;
+			} else {
+				if (Array.isArray(ast[key])) {
+					ast[key].forEach(registerTokens);
+				} else if (typeof ast[key] === 'object') {
+					registerTokens(ast[key]);
 				}
-			} else if (typeof ast[key] === 'object') {
-				registerTokens(ast[key], generator, source);
 			}
 		}
-	}
+	}(ast));
 }
 
 /**
@@ -224,7 +224,7 @@ module.exports.add = function add (file, options, cb) {
 				sourceMap = generator.toJSON();
 			} else if (fileType === '.css') {
 				var ast = css.parse(fileContent, { silent: true });
-				registerTokens(ast, generator, source);
+				addCSSMappings(ast, generator, source);
 				generator.setSourceContent(source, fileContent);
 				sourceMap = generator.toJSON();
 			}
