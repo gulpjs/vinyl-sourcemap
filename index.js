@@ -30,12 +30,11 @@ function addCSSMappings (ast, generator, source) {
 		for (var key in ast) {
 			if (key === 'position' || !ast[key]) {
 				break;
-			} else {
-				if (Array.isArray(ast[key])) {
-					ast[key].forEach(registerTokens);
-				} else if (typeof ast[key] === 'object') {
-					registerTokens(ast[key]);
-				}
+			}
+			if (Array.isArray(ast[key])) {
+				ast[key].forEach(registerTokens);
+			} else if (typeof ast[key] === 'object') {
+				registerTokens(ast[key]);
 			}
 		}
 	}(ast));
