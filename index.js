@@ -18,6 +18,12 @@ function unixStylePath (filePath) {
 	return filePath.split(path.sep).join('/');
 }
 
+function parse(data) {
+	try {
+		return JSON.parse(stripBom(data));
+	} catch (err) {}
+}
+
 function addCSSMappings (ast, generator, source) {
 	(function registerTokens (ast) {
 		if (ast.position) {
@@ -151,13 +157,6 @@ module.exports.add = function add (file, options, cb) {
 			// sources in external map are relative to map file
 			sourcePath = path.dirname(mapFile);
 
-			var sourceMapLoaded = function (data) {
-				try {
-					sourceMap = JSON.parse(stripBom(data));
-				} catch (err) {}
-				callback();
-			};
-
 			fs.readFile(mapFile, 'utf8', function (err, data) {
 				if (err) {
 					if (options.debug) {
@@ -165,7 +164,8 @@ module.exports.add = function add (file, options, cb) {
 					}
 					return callback();
 				}
-				sourceMapLoaded(data);
+				sourceMap = parse(data);
+				callback();
 			});
 
 		};
