@@ -77,11 +77,7 @@ module.exports.add = function add (file, options, cb) {
 	var sourceMap;
 	var sourcePath = ''; //root path for the sources in the map
 
-	var loadMaps = function (callback) {
-		if (!options.loadMaps) {
-			return callback();
-		}
-
+	if (options.loadMaps) {
 		// Try to read inline source map
 		sourceMap = convert.fromSource(fileContent);
 
@@ -91,9 +87,7 @@ module.exports.add = function add (file, options, cb) {
 			sourcePath = path.dirname(file.path);
 			fileContent = convert.removeComments(fileContent);
 		}
-
-		callback();
-	};
+	}
 
 	// fix source paths and sourceContent for imported source map
 	var fixImportedSourceMap = function (callback) {
@@ -244,7 +238,6 @@ module.exports.add = function add (file, options, cb) {
 
 
 	var asyncTasks = [
-		loadMaps,
 		loadSourceMap,
 		fixImportedSourceMap,
 		mapsLoaded
