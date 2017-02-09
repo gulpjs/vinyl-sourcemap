@@ -81,7 +81,6 @@ module.exports.add = function add (file, options, cb) {
 		var fixImportedSourceMap = function () {
 			sourceMap.sourcesContent = sourceMap.sourcesContent || [];
 
-			var loadCounter = 0;
 			var loadSourceAsync = function (source, onLoaded) {
 				var i = source[0],
 					absPath = source[1];
@@ -133,18 +132,7 @@ module.exports.add = function add (file, options, cb) {
 			// remove source map comment from source
 			file.contents = new Buffer(fileContent, 'utf8');
 
-			if (sourcesToLoadAsync.length) {
-				sourcesToLoadAsync.forEach(function(source) {
-					loadSourceAsync(source, function onLoaded () {
-						if (++loadCounter === sourcesToLoadAsync.length) {
-							callback(null);
-						}
-					});
-				});
-			} else {
-				callback(null);
-			}
-
+			async.each(sourcesToLoadAsync, loadSourceAsync, callback);
 		};
 
 		var loadSourceMap = function (callback) {
