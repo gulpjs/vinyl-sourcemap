@@ -89,6 +89,39 @@ module.exports.add = function add (file, options, cb) {
 		}
 	}
 
+	var loadSourceMap = function (callback) {
+		if (sourceMap) {
+			return callback();
+		}
+
+		// look for source map comment referencing a source map file
+		var mapComment = convert.mapFileCommentRegex.exec(fileContent);
+
+		var mapFile;
+		if (mapComment) {
+			mapFile = path.resolve(path.dirname(file.path), mapComment[1] || mapComment[2]);
+			fileContent = convert.removeMapFileComments(fileContent);
+			// if no comment try map file with same name as source file
+		} else {
+			mapFile = file.path + '.map';
+		}
+
+		// sources in external map are relative to map file
+		sourcePath = path.dirname(mapFile);
+
+		fs.readFile(mapFile, 'utf8', function (err, data) {
+			if (err) {
+				console.log(err);
+				if (options.debug) {
+					console.log(PLUGIN_NAME + '-add: Can\'t read map file :' + mapFile);
+				}
+				return callback();
+			}
+			sourceMap = parse(data);
+			callback();
+		});
+	};
+
 	// fix source paths and sourceContent for imported source map
 	var fixImportedSourceMap = function (callback) {
 		if (!sourceMap) {
@@ -149,40 +182,6 @@ module.exports.add = function add (file, options, cb) {
 		file.contents = new Buffer(fileContent, 'utf8');
 
 		async.each(sourcesToLoadAsync, loadSourceAsync, callback);
-	};
-
-	var loadSourceMap = function (callback) {
-		if (sourceMap) {
-			return callback();
-		}
-
-		// look for source map comment referencing a source map file
-		var mapComment = convert.mapFileCommentRegex.exec(fileContent);
-
-		var mapFile;
-		if (mapComment) {
-			mapFile = path.resolve(path.dirname(file.path), mapComment[1] || mapComment[2]);
-			fileContent = convert.removeMapFileComments(fileContent);
-			// if no comment try map file with same name as source file
-		} else {
-			mapFile = file.path + '.map';
-		}
-
-		// sources in external map are relative to map file
-		sourcePath = path.dirname(mapFile);
-
-		fs.readFile(mapFile, 'utf8', function (err, data) {
-			if (err) {
-				console.log(err);
-				if (options.debug) {
-					console.log(PLUGIN_NAME + '-add: Can\'t read map file :' + mapFile);
-				}
-				return callback();
-			}
-			sourceMap = parse(data);
-			callback();
-		});
-
 	};
 
 	var mapsLoaded = function (callback) {
