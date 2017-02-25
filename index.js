@@ -1,248 +1,56 @@
 'use strict';
 
 var path = require('path');
-var File = require('vinyl');
-var convert = require('convert-source-map');
-var stripBom = require('strip-bom');
-var acorn = require('acorn');
-var SourceMapGenerator = require('source-map').SourceMapGenerator;
-var css = require('css');
 var fs = require('graceful-fs');
+var stripBom = require('strip-bom');
+
+var File = require('vinyl');
 var detectNewline = require('detect-newline');
 var async = require('async');
 
+var helpers = require('./lib/helpers');
+
 var PLUGIN_NAME = 'vinyl-sourcemap';
-var urlRegex = /^(https?|webpack(-[^:]+)?):\/\//;
-
-function unixStylePath (filePath) {
-	return filePath.split(path.sep).join('/');
-}
-
-function parse(data) {
-	try {
-		return JSON.parse(stripBom(data));
-	} catch (err) {}
-}
-
-function addCSSMappings (ast, generator, source) {
-	(function registerTokens (ast) {
-		if (ast.position) {
-			generator.addMapping({
-				original: ast.position.start,
-				generated: ast.position.start,
-				source: source
-			});
-		}
-		for (var key in ast) {
-			if (key === 'position' || !ast[key]) {
-				break;
-			}
-			if (Array.isArray(ast[key])) {
-				ast[key].forEach(registerTokens);
-			} else if (typeof ast[key] === 'object') {
-				registerTokens(ast[key]);
-			}
-		}
-	}(ast));
-}
 
 /**
  * Add a sourcemap to a vinyl file (async, with callback function)
  * @param file
  * @param options
- * @param cb
+ * @param callback
  */
-module.exports.add = function add (file, options, cb) {
+module.exports.add = function add (file, options, callback) {
 
 	// check if options are passed or a callback as second argument
 	// if there are 3 arguments, the options param should be an object
 	if (typeof options === 'function') {
-		cb = options;
+		callback = options;
 		options = {};
 	} else if (!options || typeof options !== 'object') {
-		return cb(new Error(PLUGIN_NAME + '-add: Invalid argument: options'));
+		return callback(new Error(PLUGIN_NAME + '-add: Invalid argument: options'));
 	}
 
 	// Throw an error if the file argument is not a vinyl file
 	if (!File.isVinyl(file)) {
-		return cb(new Error(PLUGIN_NAME + '-add: Not a vinyl file'));
+		return callback(new Error(PLUGIN_NAME + '-add: Not a vinyl file'));
 	}
 
 	// Return the file if already has sourcemaps
 	if (file.sourceMap) {
-		return cb(null, file);
+		return callback(null, file);
 	}
 
-	var fileContent = file.contents.toString();
-	var sourceMap;
-	var sourcePath = ''; //root path for the sources in the map
+	var source = {
+		path: '', //root path for the sources in the map
+		map: null,
+		content: file.contents.toString(),
+		preExistingComment: null
+	};
 
 	if (options.loadMaps) {
-		// Try to read inline source map
-		sourceMap = convert.fromSource(fileContent);
-
-		if (sourceMap) {
-			sourceMap = sourceMap.toObject();
-			// sources in map are relative to the source file
-			sourcePath = path.dirname(file.path);
-			fileContent = convert.removeComments(fileContent);
-		}
+		helpers.loadInlineMaps(file, source);
 	}
 
-	var loadSourceMap = function (callback) {
-		if (sourceMap) {
-			return callback();
-		}
-
-		// look for source map comment referencing a source map file
-		var mapComment = convert.mapFileCommentRegex.exec(fileContent);
-
-		var mapFile;
-		if (mapComment) {
-			mapFile = path.resolve(path.dirname(file.path), mapComment[1] || mapComment[2]);
-			fileContent = convert.removeMapFileComments(fileContent);
-			// if no comment try map file with same name as source file
-		} else {
-			mapFile = file.path + '.map';
-		}
-
-		// sources in external map are relative to map file
-		sourcePath = path.dirname(mapFile);
-
-		fs.readFile(mapFile, 'utf8', function (err, data) {
-			if (err) {
-				console.log(err);
-				if (options.debug) {
-					console.log(PLUGIN_NAME + '-add: Can\'t read map file :' + mapFile);
-				}
-				return callback();
-			}
-			sourceMap = parse(data);
-			callback();
-		});
-	};
-
-	// fix source paths and sourceContent for imported source map
-	var fixImportedSourceMap = function (callback) {
-		if (!sourceMap) {
-			return callback();
-		}
-
-		sourceMap.sourcesContent = sourceMap.sourcesContent || [];
-
-		var loadSourceAsync = function (source, onLoaded) {
-			var i = source[0],
-				absPath = source[1];
-			fs.readFile(absPath, 'utf8', function (err, data) {
-				if (err) {
-					if (options.debug) {
-						console.warn(PLUGIN_NAME + '-add: source file not found: ' + absPath);
-					}
-					sourceMap.sourcesContent[i] = null;
-					return onLoaded();
-				}
-				sourceMap.sourcesContent[i] = stripBom(data);
-				onLoaded();
-			});
-		};
-
-		var sourcesToLoadAsync = sourceMap.sources.reduce(function(result, source, i) {
-			if (source.match(urlRegex)) {
-				sourceMap.sourcesContent[i] = sourceMap.sourcesContent[i] || null;
-				return result;
-			}
-			var absPath = path.resolve(sourcePath, source);
-			sourceMap.sources[i] = unixStylePath(path.relative(file.base, absPath));
-			if (!sourceMap.sourcesContent[i]) {
-				var sourceContent = null;
-				if (sourceMap.sourceRoot) {
-					if (sourceMap.sourceRoot.match(urlRegex)) {
-						sourceMap.sourcesContent[i] = null;
-						return result;
-					}
-					absPath = path.resolve(sourcePath, sourceMap.sourceRoot, source);
-				}
-				if (absPath === file.path) {
-					// if current file: use content
-					sourceContent = fileContent;
-				} else {
-					// else load content from file async
-					if (options.debug) {
-						console.log(PLUGIN_NAME + '-add: No source content for "' + source + '". Loading from file.');
-					}
-					result.push([i, absPath]);
-					return result;
-				}
-				sourceMap.sourcesContent[i] = sourceContent;
-			}
-			return result;
-		}, []);
-
-		// remove source map comment from source
-		file.contents = new Buffer(fileContent, 'utf8');
-
-		async.each(sourcesToLoadAsync, loadSourceAsync, callback);
-	};
-
-	var mapsLoaded = function (callback) {
-
-		if (!sourceMap && options.identityMap) {
-			var fileType = path.extname(file.path);
-			var source = unixStylePath(file.relative);
-			var generator = new SourceMapGenerator({ file: source });
-			if (fileType === '.js') {
-				var tokenizer = acorn.tokenizer(fileContent, { locations: true });
-				while (true) {
-					var token = tokenizer.getToken();
-
-					if (token.type.label === 'eof') {
-						break;
-					}
-					var mapping = {
-						original: token.loc.start,
-						generated: token.loc.start,
-						source: source,
-					};
-					if (token.type.label === 'name') {
-						mapping.name = token.value;
-					}
-					generator.addMapping(mapping);
-				}
-				generator.setSourceContent(source, fileContent);
-				sourceMap = generator.toJSON();
-			} else if (fileType === '.css') {
-				var ast = css.parse(fileContent, { silent: true });
-				addCSSMappings(ast, generator, source);
-				generator.setSourceContent(source, fileContent);
-				sourceMap = generator.toJSON();
-			}
-		}
-
-		if (!sourceMap) {
-			sourceMap = {
-				version: 3,
-				names: [],
-				mappings: '',
-				sources: [unixStylePath(file.relative)],
-				sourcesContent: [fileContent]
-			};
-		}
-
-		sourceMap.file = unixStylePath(file.relative);
-		file.sourceMap = sourceMap;
-
-		callback(null, file);
-
-	};
-
-
-	var asyncTasks = [
-		loadSourceMap,
-		fixImportedSourceMap,
-		mapsLoaded
-	];
-	async.waterfall(asyncTasks, cb);
-
+	helpers.addSourceMaps(file, source, options, callback);
 };
 
 /**
@@ -250,7 +58,7 @@ module.exports.add = function add (file, options, cb) {
  * @param file
  * @param destPath
  * @param options
- * @param cb
+ * @param callback
  */
 module.exports.write = function write (file, destPath, options, cb) {
 
@@ -301,7 +109,7 @@ module.exports.write = function write (file, destPath, options, cb) {
 	}
 
 	// fix paths if Windows style paths
-	sourceMap.file = unixStylePath(file.relative);
+	sourceMap.file = helpers.unixStylePath(file.relative);
 
 	if (options.mapSources && typeof options.mapSources === 'function') {
 		sourceMap.sources = sourceMap.sources.map(function(filePath) {
@@ -310,7 +118,7 @@ module.exports.write = function write (file, destPath, options, cb) {
 	}
 
 	sourceMap.sources = sourceMap.sources.map(function(filePath) {
-		return unixStylePath(filePath);
+		return helpers.unixStylePath(filePath);
 	});
 
 	if (typeof options.sourceRoot === 'function') {
@@ -407,17 +215,17 @@ module.exports.write = function write (file, destPath, options, cb) {
 			if (options.destPath) {
 				var destSourceMapPath = path.join(file.cwd, options.destPath, mapFile);
 				var destFilePath = path.join(file.cwd, options.destPath, file.relative);
-				sourceMap.file = unixStylePath(path.relative(path.dirname(destSourceMapPath), destFilePath));
+				sourceMap.file = helpers.unixStylePath(path.relative(path.dirname(destSourceMapPath), destFilePath));
 				if (sourceMap.sourceRoot === undefined) {
-					sourceMap.sourceRoot = unixStylePath(path.relative(path.dirname(destSourceMapPath), file.base));
+					sourceMap.sourceRoot = helpers.unixStylePath(path.relative(path.dirname(destSourceMapPath), file.base));
 				} else if (sourceMap.sourceRoot === '' || (sourceMap.sourceRoot && sourceMap.sourceRoot[0] === '.')) {
-					sourceMap.sourceRoot = unixStylePath(path.join(path.relative(path.dirname(destSourceMapPath), file.base), sourceMap.sourceRoot));
+					sourceMap.sourceRoot = helpers.unixStylePath(path.join(path.relative(path.dirname(destSourceMapPath), file.base), sourceMap.sourceRoot));
 				}
 			} else {
 				// best effort, can be incorrect if options.destPath not set
-				sourceMap.file = unixStylePath(path.relative(path.dirname(sourceMapPath), file.path));
+				sourceMap.file = helpers.unixStylePath(path.relative(path.dirname(sourceMapPath), file.path));
 				if (sourceMap.sourceRoot === '' || (sourceMap.sourceRoot && sourceMap.sourceRoot[0] === '.')) {
-					sourceMap.sourceRoot = unixStylePath(path.join(path.relative(path.dirname(sourceMapPath), file.base), sourceMap.sourceRoot));
+					sourceMap.sourceRoot = helpers.unixStylePath(path.join(path.relative(path.dirname(sourceMapPath), file.base), sourceMap.sourceRoot));
 				}
 			}
 
@@ -465,7 +273,7 @@ module.exports.write = function write (file, destPath, options, cb) {
 				}
 				sourceMapPathRelative = prefix+path.join('/', sourceMapPathRelative);
 			}
-			comment = commentFormatter(unixStylePath(sourceMapPathRelative));
+			comment = commentFormatter(helpers.unixStylePath(sourceMapPathRelative));
 
 			if (options.sourceMappingURL && typeof options.sourceMappingURL === 'function') {
 				comment = commentFormatter(options.sourceMappingURL(file));
