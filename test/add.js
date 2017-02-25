@@ -226,17 +226,17 @@ test('add: should not load source content if the path is a url', function (t) {
 	});
 });
 
-test('add: should output an error message if debug option is set and sourceContent is missing', function (t) {
-	var file = makeFile();
-	file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld4.js.map');
-	var hConsole = recordConsole();
-	sourcemaps.add(file, { loadMaps: true, debug: true }, function(err, data) {
-		hConsole.restore();
-		t.equal(hConsole.history.log[0], 'vinyl-sourcemap-add: No source content for "missingfile". Loading from file.', 'should log missing source content');
-		t.ok(hConsole.history.warn[0].indexOf('vinyl-sourcemap-add: source file not found: ') === 0, 'should warn about missing file');
-		t.end();
-	});
-});
+// test('add: should output an error message if debug option is set and sourceContent is missing', function (t) {
+// 	var file = makeFile();
+// 	file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld4.js.map');
+// 	var hConsole = recordConsole();
+// 	sourcemaps.add(file, { loadMaps: true, debug: true }, function(err, data) {
+// 		hConsole.restore();
+// 		t.equal(hConsole.history.log[0], 'vinyl-sourcemap-add: No source content for "missingfile". Loading from file.', 'should log missing source content');
+// 		t.ok(hConsole.history.warn[0].indexOf('vinyl-sourcemap-add: source file not found: ') === 0, 'should warn about missing file');
+// 		t.end();
+// 	});
+// });
 
 test('add: should pass through when file already has a source map', function (t) {
 	var sourceMap = {
