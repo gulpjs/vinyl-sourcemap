@@ -95,7 +95,7 @@ describe('write.js', function() {
 
 		it('should return an error when invalid arguments are provided', function(done){
 			var file = makeFile();
-			sourcemaps.write(file, 'undefined', function(err, data) {
+			sourcemaps.write(file, undefined, function(err, data) {
 				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist('Should not accept undefined as second argument with a callback as third')
 				done();
 			})
