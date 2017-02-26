@@ -41,92 +41,64 @@ function makeFileWithInlineSourceMap() {
 describe('add.js', function() {
 
 	it('should not accept null as argument', function(done) {
-		[
-			{type: 'null'}
-		].map(function(obj) {
-			sourcemaps.add(obj.val, function(err, file) {
-				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
-				done();
-			});
+		sourcemaps.add(null, function(err, file) {
+			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
+			done();
 		});
 	});
 
 
 
 	it('should not accept an empty object as argument', function(done) {
-		[
-			{ type: 'an object', val: {} }
-		].map(function(obj) {
-			sourcemaps.add(obj.val, function(err, file) {
-				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
-				done();
-			});
+		sourcemaps.add({}, function(err, file) {
+			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
+			done();
 		});
 	});
 
 	it('should not accept a stream as argument', function(done) {
-		[
-			{ type: 'a stream', val: new stream.Readable() }
-		].map(function(obj) {
-			sourcemaps.add(obj.val, function(err, file) {
-				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
-				done();
-			});
+		sourcemaps.add(new stream.Readable(), function(err, file) {
+			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
+			done();
 		});
 	});
 
 		it('should not accept undefined as options argument', function(done) {
 			var file = makeFile();
-			[
-				{ type: 'undefined' }
-			].map(function(obj) {
-				sourcemaps.add(file, obj.val, function(err, file) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
-					done();
-				});
+			sourcemaps.add(file, 'undefined', function(err, file) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
+				done();
 			});
 		});
 
 		it('should not accept null as options argument', function(done) {
 			var file = makeFile();
-			[
-				{ type: 'null', val: null }
-			].map(function(obj) {
-				sourcemaps.add(file, obj.val, function(err, file) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
-					done();
-				});
+			sourcemaps.add(file, null, function(err, file) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
+				done();
 			});
 		});
 
 		it('should not accept empty string as options argument', function(done) {
 			var file = makeFile();
-			[
-				{ type: 'a string', val: '' }
-			].map(function(obj) {
-				sourcemaps.add(file, obj.val, function(err, file) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
-					done();
-				});
+			sourcemaps.add(file, '', function(err, file) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
+				done();
 			});
 		});
 
 
 		it('should not accept boolean as options argument', function(done) {
 			var file = makeFile();
-			[
-				{ type: 'a boolean', val: true }
-			].map(function(obj) {
-				sourcemaps.add(file, obj.val, function(err, file) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
-					done();
-				});
+			sourcemaps.add(file, true, function(err, file) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
+				done();
 			});
 		});
 
 		it('should add an empty sourceMap', function(done) {
 			sourcemaps.add(makeFile(), function(err, data) {
-				expect(File.isVinyl(data)).toExist(['Should return a vinyl file']);
+				expect(File.isVinyl(data)).toExist('Should return a vinyl file');
 				expect(data.sourceMap).toExist(['Should add a source map object'])
 				expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 				expect(data.sourceMap.sources[0]).toBe('helloworld.js', 'Should add file to sources')
@@ -141,7 +113,7 @@ describe('add.js', function() {
 			sourcemaps.add(makeFile(), {identityMap: true}, function(err, data) {
 				expect(data).toExist(['Should pass something through']);
 				expect(data).toExist(['Should pass a vinyl file through']);
-				expect(data.sourceMap).toExist(['Should add a source map object']);
+				expect(data.sourceMap).toExist('Should add a source map object');
 				expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 				expect(data.sourceMap.sources[0]).toBe('helloworld.js', 'Should add file to sources');
 				expect(data.sourceMap.sourcesContent[0]).toBe(sourceContent, 'Should add file content to sourcesContent');
@@ -153,9 +125,9 @@ describe('add.js', function() {
 
 		it('should add a valid source map for CSS if wished', function(done) {
 			sourcemaps.add(makeFileCSS(), {identityMap: true}, function(err, data) {
-				expect(data).toExist(['Should pass something through']);
-				expect(data instanceof File).toExist(['Should pass a vinyl file through']);
-				expect(data.sourceMap).toExist(['Should add a source map object']);
+				expect(data).toExist('Should pass something through');
+				expect(data instanceof File).toExist('Should pass a vinyl file through');
+				expect(data.sourceMap).toExist('Should add a source map object');
 				expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 				expect(data.sourceMap.sources[0]).toBe('test.css', 'Should add file to sources');
 				expect(data.sourceMap.sourcesContent[0]).toBe(sourceContentCSS, 'Should add file content to sourcesContent');
@@ -167,9 +139,9 @@ describe('add.js', function() {
 
 		it('should import an existing inline source map', function(done) {
 			sourcemaps.add(makeFileWithInlineSourceMap(), { loadMaps: true }, function(err, data) {
-				expect(data).toExist(['Should pass something through'])
-				expect(data instanceof File).toExist(['Should pass a vinyl file through']);
-				expect(data.sourceMap).toExist(['Should add a source map object']);
+				expect(data).toExist('Should pass something through')
+				expect(data instanceof File).toExist('Should pass a vinyl file through');
+				expect(data.sourceMap).toExist('Should add a source map object');
 				expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 				expect(data.sourceMap.sources).toEqual(['test1.js', 'test2.js'], 'Should have right sources');
 				expect(data.sourceMap.sourcesContent).toEqual(['console.log(\'line 1.1\');\nconsole.log(\'line 1.2\');\n', 'console.log(\'line 2.1\');\nconsole.log(\'line 2.2\');'], 'SHould have right sourceContent');
@@ -180,7 +152,7 @@ describe('add.js', function() {
 
 		it('should remove inline source', function(done){
 			sourcemaps.add(makeFileWithInlineSourceMap(), {loadMaps: true}, function(err, data){
-				expect(/sourceMappingURL/.test(data.contents.toString())).toNotExist(['Should not have sourcemapping']);
+				expect(/sourceMappingURL/.test(data.contents.toString())).toNotExist('Should not have sourcemapping');
 				done();
 			})
 		})
@@ -189,7 +161,7 @@ describe('add.js', function() {
 			var file = makeFile();
 			file.contents = new Buffer(sourceContent +  '\n//# sourceMappingURL=helloworld2.js.map');
 			sourcemaps.add(file, {loadMaps: true}, function(err, data){
-				expect(data.sourceMap).toExist(['Should add a source map object']);
+				expect(data.sourceMap).toExist('Should add a source map object');
 				expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 				expect(data.sourceMap.sources).toEqual(['helloworld2.js'], 'should have right sources');
 				expect(data.sourceMap.sourcesContent).toEqual(['source content from source map'], 'should have right sourcesContent');
@@ -202,7 +174,7 @@ describe('add.js', function() {
 			var file = makeFile();
 			file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld2.js.map');
 			sourcemaps.add(file, {loadMaps: true}, function(err, data){
-				expect(/sourceMappingURL/.test(data.contents.toString())).toNotExist(['Should not have sourcemapping']);
+				expect(/sourceMappingURL/.test(data.contents.toString())).toNotExist('Should not have sourcemapping');
 				done();
 			})
 		})
@@ -212,7 +184,7 @@ describe('add.js', function() {
 			var file = makeFile();
 			file.path = file.path.replace('helloworld.js', 'helloworld2.js');
 			sourcemaps.add(file, {loadMaps: true}, function(err, data) {
-					expect(data.sourceMap).toExist(['Should add a source map object']);
+					expect(data.sourceMap).toExist('Should add a source map object');
 					expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 					expect(data.sourceMap.sources).toEqual(['helloworld2.js'], 'Should have right sources');
 					expect(data.sourceMap.sourcesContent).toEqual(['source content from source map'], 'Should have right sourceContent');
@@ -225,7 +197,7 @@ describe('add.js', function() {
 			var file = makeFile();
 			file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld3.js.map' );
 			sourcemaps.add(file, {loadMaps: true}, function(err, data) {
-				expect(data.sourceMap).toExist(['Should add a source map object']);
+				expect(data.sourceMap).toExist('Should add a source map object');
 				expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 				expect(data.sourceMap.sources).toEqual(['helloworld.js', 'test1.js'], 'Should have right sources');
 				expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), 'test1\n'], 'Should have right sourcesContent');
@@ -238,7 +210,7 @@ describe('add.js', function() {
 			var file = makeFile();
 			file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld4.js.map');
 			sourcemaps.add(file, {loadMaps: true}, function(err, data) {
-				expect(data.sourceMap).toExist(['Should add a source map object']);
+				expect(data.sourceMap).toExist('Should add a source map object');
 				expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 				expect(data.sourceMap.sources).toEqual(['helloworld.js', 'missingfile'], 'Should have right sources');
 				expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), null], 'Should have right sourcesContent');
@@ -251,7 +223,7 @@ describe('add.js', function() {
 			var file = makeFile();
 			file.base = file.cwd;
 			sourcemaps.add(file, function(err, data) {
-					expect(data.sourceMap.file).toBe('assets/helloworld.js', ['Should have right file']);
+					expect(data.sourceMap.file).toBe('assets/helloworld.js', 'Should have right file');
 					expect(data.sourceMap.sources).toEqual(['assets/helloworld.js'], 'Should have right sources');
 					done();
 				})
@@ -266,7 +238,7 @@ describe('add.js', function() {
 					expect(data.sourceMap.sources).toEqual(['../helloworld.js', '../test1.js'], 'Should have right sources');
 					expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), 'test1\n'], 'Should have right sourcesContent');
 					expect(data.sourceMap.mappings).toBe('', 'Should have right mappings');
-					expect(data.sourceMap.sourceRoot).toBe('test', ['Should have right sourceRoot']);
+					expect(data.sourceMap.sourceRoot).toBe('test', 'Should have right sourceRoot');
 					done();
 				})
 			})
@@ -275,7 +247,7 @@ describe('add.js', function() {
 			var file = makeFile();
 			file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld6.js.map');
 			sourcemaps.add(file, {loadMaps: true}, function(err, data) {
-				expect(data.sourceMap).toExist(['Should add a source map object']);
+				expect(data.sourceMap).toExist('Should add a source map object');
 				expect(String(data.sourceMap.version)).toBe('3', 'Should have version 3');
 				expect(data.sourceMap.sources).toEqual(['helloworld.js', 'http://example2.com/test1.js'], 'Should have right sources');
 				expect(data.sourceMap.sourcesContent).toEqual([null, null]);
@@ -295,7 +267,7 @@ describe('add.js', function() {
 			var file = makeFile();
 			file.sourceMap = sourceMap;
 			sourcemaps.add(file, {loadMaps:true}, function(err, data) {
-					expect(data).toExist(['Should pass something through']);
+					expect(data).toExist('Should pass something through');
 					expect(data instanceof File).toExist('Should pass a vinyl file through');
 					expect(data.sourceMap).toBe(sourceMap, 'Should not change the source map');
 					expect(data).toEqual(file, ['Should not change file'])

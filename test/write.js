@@ -54,49 +54,34 @@ function base64JSON(object) {
 }
 
 describe('write.js', function() {
+
 	it('should return an error when on valid vinyl file is provided', function(done) {
-		[
-			{ type: 'undefined'}
-		].map(function(obj) {
-			sourcemaps.write(obj.val, function(err, data) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist('should not accept undefined as an argument')
-					done();
-				})
+		sourcemaps.write('undefined', function(err, data) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist('should not accept undefined as an argument')
+				done();
 			})
 		})
 
 
 		it('should return an error when on valid vinyl file is provided', function(done) {
-			[
-				{ type: 'null', val: null }
-			].map(function(obj) {
-				sourcemaps.write(obj.val, function(err, data) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist('should not accept null as an argument')
-					done();
-				})
+			sourcemaps.write(null, function(err, data) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist('should not accept null as an argument')
+				done();
 			})
 		})
 
 
 		it('should return an error when on valid vinyl file is provided', function(done) {
-			[
-				{ type: 'an object', val: {} }
-			].map(function(obj) {
-				sourcemaps.write(obj.val, function(err, data) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist('should not accept an object as an argument')
-					done();
-				})
+			sourcemaps.write({}, function(err, data) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist('should not accept an object as an argument')
+				done();
 			})
 		})
 
 		it('should return an error when on valid vinyl file is provided', function(done) {
-			[
-				{ type: 'a stream', val: new stream.Readable() }
-			].map(function(obj) {
-				sourcemaps.write(obj.val, function(err, data) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist('should not accept a stream as an argument')
-					done();
-				})
+			sourcemaps.write(new stream.Readable(), function(err, data) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist('should not accept a stream as an argument')
+				done();
 			})
 		})
 
@@ -110,85 +95,57 @@ describe('write.js', function() {
 
 		it('should return an error when invalid arguments are provided', function(done){
 			var file = makeFile();
-			[
-				{	type: 'undefined'}
-			].map(function(obj) {
-				sourcemaps.write(file, obj.val, function(err, data) {
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist('Should not accept undefined as second argument with a callback as third')
-					done();
-				})
+			sourcemaps.write(file, 'undefined', function(err, data) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist('Should not accept undefined as second argument with a callback as third')
+				done();
 			})
 		})
 
 		it('should return an error when invalid arguments are provided', function(done) {
 			var file = makeFile();
-			[
-				{type: 'null', val: null}
-			].map(function(obj) {
-				sourcemaps.write(file, obj.val, function(err, data){
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist('Should not accept null as second argument with a callback as third')
-					done();
-				})
+			sourcemaps.write(file, null, function(err, data){
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist('Should not accept null as second argument with a callback as third')
+				done();
 			})
 		})
 
 		it('should return an error when invalid arguments are provided', function(done) {
 			var file = makeFile();
-			[
-				{type: 'a boolean', val: true}
-			].map(function(obj) {
-				sourcemaps.write(file, obj.val, function(err, data){
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist('Should not accept boolean as second argument with a callback as third')
-					done();
-				})
+			sourcemaps.write(file, true, function(err, data){
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist('Should not accept boolean as second argument with a callback as third')
+				done();
 			})
 		})
 
 		it('should return an error when invalid options are provided', function(done){
 			var file = makeFile();
-			[
-				{type: 'undefined'}
-			].map(function(obj){
-				sourcemaps.write(file, 'test', obj.val, function(err, data){
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist('Should not accept undefined as options argument');
-					done();
-				})
+			sourcemaps.write(file, 'test', 'undefined', function(err, data){
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist('Should not accept undefined as options argument');
+				done();
 			})
 		})
 
 		it('should return an error when invalid options are provided', function(done){
 			var file = makeFile();
-			[
-				{type: 'null', val: null}
-			].map(function(obj){
-				sourcemaps.write(file, 'test', obj.val, function(err, data){
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist('Should not accept null as options argument');
-					done();
-				})
+			sourcemaps.write(file, 'test', null, function(err, data){
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist('Should not accept null as options argument');
+				done();
 			})
 		})
 
 		it('should return an error when invalid options are provided', function(done){
 			var file = makeFile();
-			[
-				{type: 'a string', val: ''}
-			].map(function(obj){
-				sourcemaps.write(file, 'test', obj.val, function(err, data){
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist('Should not accept empty string as options argument');
-					done();
-				})
+			sourcemaps.write(file, 'test', '', function(err, data){
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist('Should not accept empty string as options argument');
+				done();
 			})
 		})
 
 		it('should return an error when invalid options are provided', function(done){
 			var file = makeFile();
-			[
-				{type: 'a boolean', val: true}
-			].map(function(obj){
-				sourcemaps.write(file, 'test', obj.val, function(err, data){
-					expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist('Should not accept boolean as options argument');
-					done();
-				})
+			sourcemaps.write(file, 'test', true, function(err, data){
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist('Should not accept boolean as options argument');
+				done();
 			})
 		})
 

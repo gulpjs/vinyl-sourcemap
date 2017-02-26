@@ -4,8 +4,7 @@
   "description": "Add sourcemaps to vinyl files, extracted from gulp-sourcemaps by Florian Reiterer (https://github.com/floridoo/gulp-sourcemaps)",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/*.js",
-    "mocha": "mocha test/*.js"
+    "test": "mocha test/"
   },
   "keywords": [
     "vinyl",
@@ -18,10 +17,9 @@
   "devDependencies": {
     "eslint": "^3.4.0",
     "eslint-config-gulp": "github:robinvenneman/eslint-config-gulp",
-    "faucet": "0.0.1",
+    "expect": "^1.20.2",
     "mocha": "^3.2.0",
     "strip-bom": "^2.0.0",
-    "tap": "^7.0.0",
     "vinyl-fs": "^2.4.3"
   },
   "dependencies": {
@@ -30,7 +28,6 @@
     "convert-source-map": "^1.3.0",
     "css": "^2.2.1",
     "detect-newline": "^2.1.0",
-    "expect": "^1.20.2",
     "graceful-fs": "^4.1.6",
     "source-map": "^0.5.6",
     "through2": "^2.0.1",
