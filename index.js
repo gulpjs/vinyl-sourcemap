@@ -39,7 +39,7 @@ module.exports.add = function add (file, options, callback) {
 		return callback(null, file);
 	}
 
-	var source = {
+	var state = {
 		path: '', //root path for the sources in the map
 		map: null,
 		content: file.contents.toString(),
@@ -47,10 +47,10 @@ module.exports.add = function add (file, options, callback) {
 	};
 
 	if (options.loadMaps) {
-		helpers.loadInlineMaps(file, source);
+		helpers.loadInlineMaps(file, state);
 	}
 
-	helpers.addSourceMaps(file, source, options, callback);
+	helpers.addSourceMaps(file, state, options, callback);
 };
 
 /**
