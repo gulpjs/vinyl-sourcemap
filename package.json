@@ -16,8 +16,8 @@
   "license": "MIT",
   "repository": "github:gulpjs/vinyl-sourcemap",
   "devDependencies": {
-    "eslint": "^3.4.0",
-    "eslint-config-gulp": "github:robinvenneman/eslint-config-gulp",
+    "eslint": "^1.7.3",
+    "eslint-config-gulp": "^2.0.0",
     "faucet": "0.0.1",
     "strip-bom": "^2.0.0",
     "tap": "^7.0.0",
