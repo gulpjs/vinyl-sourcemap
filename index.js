@@ -18,7 +18,7 @@ var PLUGIN_NAME = 'vinyl-sourcemap';
  * @param options
  * @param cb
  */
-module.exports.add = function add (file, options, callback) {
+function add(file, options, callback) {
 
 	// check if options are passed or a callback as second argument
 	// if there are 3 arguments, the options param should be an object
@@ -51,7 +51,7 @@ module.exports.add = function add (file, options, callback) {
 	}
 
 	helpers.addSourceMaps(file, state, options, callback);
-};
+}
 
 /**
  * Write the sourcemap (async, with callback function)
@@ -60,7 +60,7 @@ module.exports.add = function add (file, options, callback) {
  * @param options
  * @param cb
  */
-module.exports.write = function write (file, destPath, options, cb) {
+function write(file, destPath, options, cb) {
 
 	// Check arguments for optional destPath, options, or callback function
 	if (cb === undefined && typeof destPath === 'function') {
@@ -298,4 +298,9 @@ module.exports.write = function write (file, destPath, options, cb) {
 	}
 	async.waterfall(asyncTasks, cb);
 
+}
+
+module.exports = {
+	add: add,
+	write: write,
 };
