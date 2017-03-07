@@ -164,19 +164,19 @@ function write(file, destPath, options, cb) {
 		async.eachOf(file.sourceMap.sources, loadSources, callback);
 	}
 
-	var contentIncluded = function (callback) {
+	function contentIncluded(callback) {
 
-		var extension = file.relative.split('.').pop();
 		var newline = detectNewline(file.contents.toString());
 		var commentFormatter;
 
-		switch (extension) {
-			case 'css':
+		// TODO: use formatter from convert-source-map
+		switch (file.extname) {
+			case '.css':
 				commentFormatter = function(url) {
 					return newline + '/*# sourceMappingURL=' + url + ' */' + newline;
 				};
 				break;
-			case 'js':
+			case '.js':
 				commentFormatter = function(url) {
 					return newline + '//# sourceMappingURL=' + url + newline;
 				};
