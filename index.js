@@ -87,6 +87,11 @@ function write(file, destPath, options, cb) {
 		return cb(new Error(PLUGIN_NAME + '-write: Not a vinyl file'));
 	}
 
+	// Throw an error if the file doesn't have a sourcemap
+	if (!file.sourceMap) {
+		return cb(new Error(PLUGIN_NAME + '-write: No sourcemap found'));
+	}
+
 	// return array with file & optionally sourcemap file
 	var arr = [];
 
@@ -103,14 +108,11 @@ function write(file, destPath, options, cb) {
 
 	var sourceMap = file.sourceMap;
 
-	// Throw an error if the file doesn't have a sourcemap
-	if (!file.sourceMap) {
-		return cb(new Error(PLUGIN_NAME + '-write: No sourcemap found'));
-	}
-
 	// fix paths if Windows style paths
 	sourceMap.file = helpers.unixStylePath(file.relative);
 
+	// TODO: Need a way to handle resolve this before passing in
+	// This module shouldn't be taking function options because they are normalized higher
 	if (options.mapSources && typeof options.mapSources === 'function') {
 		sourceMap.sources = sourceMap.sources.map(function(filePath) {
 			return options.mapSources(filePath);
@@ -121,58 +123,46 @@ function write(file, destPath, options, cb) {
 		return helpers.unixStylePath(filePath);
 	});
 
+	// TODO: Remove function support for this option
 	if (typeof options.sourceRoot === 'function') {
 		sourceMap.sourceRoot = options.sourceRoot(file);
 	} else {
 		sourceMap.sourceRoot = options.sourceRoot;
 	}
+
+	// TODO: support null-ish with ==
 	if (sourceMap.sourceRoot === null) {
 		sourceMap.sourceRoot = undefined;
 	}
 
-	var includeContent = function (callback) {
+	function includeContent(callback) {
 		sourceMap.sourcesContent = sourceMap.sourcesContent || [];
 
-		var loadCounter = 0;
-		var loadSourceAsync = function (source, onLoaded) {
-			var i = source[0],
-				sourcePath = source[1];
-			fs.readFile(sourcePath, 'utf8', function (err, data) {
-				if (err) {
-					if (options.debug) {
-						console.warn(PLUGIN_NAME + '-write: source file not found: ' + sourcePath);
-					}
-					return onLoaded();
-				}
-				sourceMap.sourcesContent[i] = stripBom(data);
-				onLoaded();
-			});
-		};
-
-		var sourcesToLoadAsync = file.sourceMap.sources.reduce(function(result, source, i) {
-			if (!sourceMap.sourcesContent[i]) {
-				var sourcePath = path.resolve(sourceMap.sourceRoot || file.base, sourceMap.sources[i]);
-				if (options.debug) {
-					console.log(PLUGIN_NAME + '-write: No source content for "' + sourceMap.sources[i] + '". Loading from file.');
-				}
-				result.push([i, sourcePath]);
+		function loadSources(sourcePath, idx, cb) {
+			if (sourceMap.sourcesContent[idx]) {
+				return cb();
 			}
-			return result;
-		}, []);
 
-		if (sourcesToLoadAsync.length) {
-			// load missing source content
-			sourcesToLoadAsync.forEach(function (source) {
-				loadSourceAsync(source, function onLoaded () {
-					if (++loadCounter === sourcesToLoadAsync.length) {
-						callback();
-					}
-				});
-			});
-		} else {
-			callback();
+			var absPath = path.resolve(sourceMap.sourceRoot || file.base, sourcePath);
+			// if (options.debug) {
+			// 	console.log(PLUGIN_NAME + '-write: No source content for "' + sourceMap.sources[i] + '". Loading from file.');
+			// }
+			fs.readFile(absPath, 'utf8', onRead);
+
+			function onRead(err, data) {
+				if (err) {
+					// if (options.debug) {
+					// 	console.warn(PLUGIN_NAME + '-write: source file not found: ' + sourcePath);
+					// }
+					return cb();
+				}
+				sourceMap.sourcesContent[idx] = stripBom(data);
+				cb();
+			}
 		}
-	};
+
+		async.eachOf(file.sourceMap.sources, loadSources, callback);
+	}
 
 	var contentIncluded = function (callback) {
 

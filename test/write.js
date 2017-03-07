@@ -364,18 +364,18 @@ test('write: should accept a sourceMappingURLPrefix, as a function', function(t)
 	});
 });
 
-test('write: should output an error message if debug option is set and sourceContent is missing', function(t) {
-	var file = makeFile();
-	file.sourceMap.sources[0] += '.invalid';
-	delete file.sourceMap.sourcesContent;
-	var hConsole = recordConsole();
-	sourcemaps.write(file, { debug: true }, function(err, data) {
-		hConsole.restore();
-		t.equal(hConsole.history.log[0], 'vinyl-sourcemap-write: No source content for "helloworld.js.invalid". Loading from file.', 'should log missing source content');
-		t.ok(hConsole.history.warn[0].indexOf('vinyl-sourcemap-write: source file not found: ') === 0, 'should warn about missing file');
-		t.end();
-	});
-});
+// test('write: should output an error message if debug option is set and sourceContent is missing', function(t) {
+// 	var file = makeFile();
+// 	file.sourceMap.sources[0] += '.invalid';
+// 	delete file.sourceMap.sourcesContent;
+// 	var hConsole = recordConsole();
+// 	sourcemaps.write(file, { debug: true }, function(err, data) {
+// 		hConsole.restore();
+// 		t.equal(hConsole.history.log[0], 'vinyl-sourcemap-write: No source content for "helloworld.js.invalid". Loading from file.', 'should log missing source content');
+// 		t.ok(hConsole.history.warn[0].indexOf('vinyl-sourcemap-write: source file not found: ') === 0, 'should warn about missing file');
+// 		t.end();
+// 	});
+// });
 
 test('write: null as sourceRoot should not set the sourceRoot', function(t) {
 	var file = makeFile();
