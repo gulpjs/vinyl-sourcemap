@@ -136,6 +136,11 @@ function write(file, destPath, options, cb) {
 	}
 
 	function includeContent(callback) {
+		if (!options.includeContent) {
+			delete sourceMap.sourcesContent;
+			return callback();
+		}
+
 		sourceMap.sourcesContent = sourceMap.sourcesContent || [];
 
 		function loadSources(sourcePath, idx, cb) {
@@ -278,14 +283,10 @@ function write(file, destPath, options, cb) {
 		arr.unshift(file);
 
 		callback(null, arr);
-	};
-
-	var asyncTasks = [contentIncluded];
-	if (options.includeContent) {
-		asyncTasks.unshift(includeContent);
-	} else {
-		delete sourceMap.sourcesContent;
 	}
+
+	var asyncTasks = [includeContent, contentIncluded];
+
 	async.waterfall(asyncTasks, cb);
 
 }
