@@ -179,25 +179,25 @@ test('write: should write external map files', function (t) {
 	t.end();
 });
 
-test('write: should allow to rename map file', function(t) {
-	var file = makeFile();
-	sourcemaps.write(file, '../maps', { mapFile: function(mapFile) {
-		return mapFile.replace('.js.map', '.map');
-	}, destPath: 'dist' }, function(err, data) {
-		var updatedFile = data[0],
-			sourceMap = data[1];
-		t.ok(updatedFile instanceof File, 'should pass a vinyl file through');
-		t.deepEqual(updatedFile, file, 'should not change file');
-		t.equal(String(updatedFile.contents),
-			sourceContent + '\n//# sourceMappingURL=../maps/helloworld.map\n',
-			'should add a comment referencing the source map file');
-		t.equal(updatedFile.sourceMap.file, '../dist/helloworld.js');
-		t.ok(sourceMap instanceof File, 'should pass a vinyl file through');
-		t.equal(sourceMap.path, path.join(__dirname, 'maps/helloworld.map'));
-		t.deepEqual(JSON.parse(sourceMap.contents), updatedFile.sourceMap, 'should have the file\'s source map as content');
-		t.end();
-	});
-});
+// test('write: should allow to rename map file', function(t) {
+// 	var file = makeFile();
+// 	sourcemaps.write(file, '../maps', { mapFile: function(mapFile) {
+// 		return mapFile.replace('.js.map', '.map');
+// 	}, destPath: 'dist' }, function(err, data) {
+// 		var updatedFile = data[0],
+// 			sourceMap = data[1];
+// 		t.ok(updatedFile instanceof File, 'should pass a vinyl file through');
+// 		t.deepEqual(updatedFile, file, 'should not change file');
+// 		t.equal(String(updatedFile.contents),
+// 			sourceContent + '\n//# sourceMappingURL=../maps/helloworld.map\n',
+// 			'should add a comment referencing the source map file');
+// 		t.equal(updatedFile.sourceMap.file, '../dist/helloworld.js');
+// 		t.ok(sourceMap instanceof File, 'should pass a vinyl file through');
+// 		t.equal(sourceMap.path, path.join(__dirname, 'maps/helloworld.map'));
+// 		t.deepEqual(JSON.parse(sourceMap.contents), updatedFile.sourceMap, 'should have the file\'s source map as content');
+// 		t.end();
+// 	});
+// });
 
 test('write: should create shortest path to map in file comment', function(t) {
 	var file = makeNestedFile();
@@ -348,21 +348,21 @@ test('write: should accept a sourceMappingURLPrefix', function(t) {
 	});
 });
 
-test('write: should accept a sourceMappingURLPrefix, as a function', function(t) {
-	var file = makeFile();
-	sourcemaps.write(file, '../maps', {
-		sourceMappingURLPrefix: function(file) {
-			return 'https://asset-host.example.com';
-		}
-	}, function(err, data) {
-		var updatedFile = data[0];
-		if (/helloworld\.js$/.test(updatedFile.path)) {
-			t.equal(String(updatedFile.contents).match(/sourceMappingURL.*\n$/)[0],
-				'sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
-			t.end();
-		}
-	});
-});
+// test('write: should accept a sourceMappingURLPrefix, as a function', function(t) {
+// 	var file = makeFile();
+// 	sourcemaps.write(file, '../maps', {
+// 		sourceMappingURLPrefix: function(file) {
+// 			return 'https://asset-host.example.com';
+// 		}
+// 	}, function(err, data) {
+// 		var updatedFile = data[0];
+// 		if (/helloworld\.js$/.test(updatedFile.path)) {
+// 			t.equal(String(updatedFile.contents).match(/sourceMappingURL.*\n$/)[0],
+// 				'sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
+// 			t.end();
+// 		}
+// 	});
+// });
 
 // test('write: should output an error message if debug option is set and sourceContent is missing', function(t) {
 // 	var file = makeFile();
@@ -408,22 +408,22 @@ test('write: empty string as sourceRoot should be kept', function(t) {
 	});
 });
 
-test('write: should be able to fully control sourceMappingURL by the option sourceMappingURL', function(t) {
-	var file = makeNestedFile();
-	sourcemaps.write(file, '../aaa/bbb/', {
-		sourceMappingURL: function(file) {
-			return 'http://maps.example.com/' + file.relative + '.map';
-		}
-	}, function(err, data) {
-		var updatedFile = data[0];
-		if (/helloworld\.js$/.test(updatedFile.path)) {
-			t.equal(String(updatedFile.contents),
-				sourceContent + '\n//# sourceMappingURL=http://maps.example.com/dir1/dir2/helloworld.js.map\n',
-				'should add source map comment with custom url');
-			t.end();
-		}
-	});
-});
+// test('write: should be able to fully control sourceMappingURL by the option sourceMappingURL', function(t) {
+// 	var file = makeNestedFile();
+// 	sourcemaps.write(file, '../aaa/bbb/', {
+// 		sourceMappingURL: function(file) {
+// 			return 'http://maps.example.com/' + file.relative + '.map';
+// 		}
+// 	}, function(err, data) {
+// 		var updatedFile = data[0];
+// 		if (/helloworld\.js$/.test(updatedFile.path)) {
+// 			t.equal(String(updatedFile.contents),
+// 				sourceContent + '\n//# sourceMappingURL=http://maps.example.com/dir1/dir2/helloworld.js.map\n',
+// 				'should add source map comment with custom url');
+// 			t.end();
+// 		}
+// 	});
+// });
 
 test('write: should allow to change sources', function(t) {
 	var file = makeFile();
