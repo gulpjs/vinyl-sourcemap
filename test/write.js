@@ -261,18 +261,18 @@ test('write: should set the sourceRoot by option sourceRoot', function(t) {
 	});
 });
 
-test('write: should set the sourceRoot by option sourceRoot, as a function', function(t) {
-	var file = makeFile();
-	sourcemaps.write(file, {
-		sourceRoot: function(file) {
-			return '/testSourceRoot';
-		}
-	}, function(err, data) {
-		var updatedFile = data[0];
-		t.equal(updatedFile.sourceMap.sourceRoot, '/testSourceRoot', 'should set sourceRoot');
-		t.end();
-	});
-});
+// test('write: should set the sourceRoot by option sourceRoot, as a function', function(t) {
+// 	var file = makeFile();
+// 	sourcemaps.write(file, {
+// 		sourceRoot: function(file) {
+// 			return '/testSourceRoot';
+// 		}
+// 	}, function(err, data) {
+// 		var updatedFile = data[0];
+// 		t.equal(updatedFile.sourceMap.sourceRoot, '/testSourceRoot', 'should set sourceRoot');
+// 		t.end();
+// 	});
+// });
 
 test('write: should automatically determine sourceRoot if destPath is set', function(t) {
 	var file = makeNestedFile();
@@ -386,18 +386,18 @@ test('write: null as sourceRoot should not set the sourceRoot', function(t) {
 	});
 });
 
-test('write: function returning null as sourceRoot should not set the sourceRoot', function(t) {
-	var file = makeFile();
-	sourcemaps.write(file, {
-		sourceRoot: function(file) {
-			return null;
-		}
-	}, function(err, data) {
-		var updatedFile = data[0];
-		t.equal(updatedFile.sourceMap.sourceRoot, undefined, 'should set sourceRoot');
-		t.end();
-	});
-});
+// test('write: function returning null as sourceRoot should not set the sourceRoot', function(t) {
+// 	var file = makeFile();
+// 	sourcemaps.write(file, {
+// 		sourceRoot: function(file) {
+// 			return null;
+// 		}
+// 	}, function(err, data) {
+// 		var updatedFile = data[0];
+// 		t.equal(updatedFile.sourceMap.sourceRoot, undefined, 'should set sourceRoot');
+// 		t.end();
+// 	});
+// });
 
 test('write: empty string as sourceRoot should be kept', function(t) {
 	var file = makeFile();

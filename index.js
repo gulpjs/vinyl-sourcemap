@@ -86,6 +86,7 @@ function write(file, destPath, options, callback) {
 		return callback(new Error(PLUGIN_NAME + '-write: No sourcemap found'));
 	}
 
+	// TODO: don't mutate - needs test too
 	// set defaults for options if unset
 	if (options.includeContent === undefined) {
 		options.includeContent = true;
@@ -114,12 +115,9 @@ function write(file, destPath, options, callback) {
 		return helpers.unixStylePath(filePath);
 	});
 
-	// TODO: Remove function support for this option
-	if (typeof options.sourceRoot === 'function') {
-		sourceMap.sourceRoot = options.sourceRoot(file);
-	} else {
-		sourceMap.sourceRoot = options.sourceRoot;
-	}
+	// A function option here would have already been resolved higher up
+	// TODO: need a test for this being unset by not being defined
+	sourceMap.sourceRoot = options.sourceRoot;
 
 	// TODO: support null-ish with ==
 	if (sourceMap.sourceRoot === null) {
