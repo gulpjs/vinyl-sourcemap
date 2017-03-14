@@ -4,7 +4,7 @@
   "description": "Add sourcemaps to vinyl files, extracted from gulp-sourcemaps by Florian Reiterer (https://github.com/floridoo/gulp-sourcemaps)",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/"
+    "test": "mocha --async-only"
   },
   "keywords": [
     "vinyl",
