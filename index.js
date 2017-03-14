@@ -10,7 +10,7 @@ var PLUGIN_NAME = 'vinyl-sourcemap';
  * Add a sourcemap to a vinyl file (async, with callback function)
  * @param file
  * @param options
- * @param cb
+ * @param callback
  */
 function add(file, options, callback) {
 
@@ -52,7 +52,7 @@ function add(file, options, callback) {
  * @param file
  * @param destPath
  * @param options
- * @param cb
+ * @param callback
  */
 function write(file, destPath, options, callback) {
 
