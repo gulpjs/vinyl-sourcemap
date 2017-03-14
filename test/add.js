@@ -101,7 +101,7 @@ describe('add', function() {
 			expect(data.sourceMap.sourcesContent[0]).toBe(sourceContent);
 			expect(data.sourceMap.names).toEqual([]);
 			expect(data.sourceMap.mappings).toBe('');
-			done();
+			done(err);
 		});
 	});
 
@@ -115,7 +115,7 @@ describe('add', function() {
 			expect(data.sourceMap.sourcesContent[0]).toBe(sourceContent);
 			expect(data.sourceMap.names).toEqual(['helloWorld', 'console','log']);
 			expect(data.sourceMap.mappings).toBe('AAAA,YAAY;;AAEZ,SAASA,UAAU,CAAC,EAAE;CACrBC,OAAO,CAACC,GAAG,CAAC,cAAc,CAAC;AAC5B');
-			done();
+			done(err);
 		});
 	});
 
@@ -129,7 +129,7 @@ describe('add', function() {
 			expect(data.sourceMap.sourcesContent[0]).toBe(sourceContentCSS);
 			expect(data.sourceMap.names).toEqual([]);
 			expect(data.sourceMap.mappings).toBe('CAAC;EACC;EACA');
-			done();
+			done(err);
 		});
 	});
 
@@ -142,14 +142,14 @@ describe('add', function() {
 			expect(data.sourceMap.sources).toEqual(['test1.js', 'test2.js']);
 			expect(data.sourceMap.sourcesContent).toEqual(['console.log(\'line 1.1\');\nconsole.log(\'line 1.2\');\n', 'console.log(\'line 2.1\');\nconsole.log(\'line 2.2\');']);
 			expect(data.sourceMap.mappings).toBe('AAAAA,QAAAC,IAAA,YACAD,QAAAC,IAAA,YCDAD,QAAAC,IAAA,YACAD,QAAAC,IAAA');
-			done();
+			done(err);
 		});
 	});
 
 	it('should remove inline source', function(done) {
 		sourcemaps.add(makeFileWithInlineSourceMap(), { loadMaps: true }, function(err, data) {
 			expect(/sourceMappingURL/.test(data.contents.toString())).toNotExist();
-			done();
+			done(err);
 		});
 	});
 
@@ -162,7 +162,7 @@ describe('add', function() {
 			expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
 			expect(data.sourceMap.sourcesContent).toEqual(['source content from source map']);
 			expect(data.sourceMap.mappings).toBe('');
-			done();
+			done(err);
 		});
 	});
 
@@ -171,7 +171,7 @@ describe('add', function() {
 		file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld2.js.map');
 		sourcemaps.add(file, { loadMaps: true }, function(err, data) {
 			expect(/sourceMappingURL/.test(data.contents.toString())).toNotExist();
-			done();
+			done(err);
 		});
 	});
 
@@ -184,7 +184,7 @@ describe('add', function() {
 			expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
 			expect(data.sourceMap.sourcesContent).toEqual(['source content from source map']);
 			expect(data.sourceMap.mappings).toBe('');
-			done();
+			done(err);
 		});
 	});
 
@@ -197,7 +197,7 @@ describe('add', function() {
 			expect(data.sourceMap.sources).toEqual(['helloworld.js', 'test1.js']);
 			expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), 'test1\n']);
 			expect(data.sourceMap.mappings).toBe('');
-			done();
+			done(err);
 		});
 	});
 
@@ -210,7 +210,7 @@ describe('add', function() {
 			expect(data.sourceMap.sources).toEqual(['helloworld.js', 'missingfile']);
 			expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), null]);
 			expect(data.sourceMap.mappings).toBe('');
-			done();
+			done(err);
 		});
 	});
 
@@ -220,7 +220,7 @@ describe('add', function() {
 		sourcemaps.add(file, function(err, data) {
 			expect(data.sourceMap.file).toBe('assets/helloworld.js');
 			expect(data.sourceMap.sources).toEqual(['assets/helloworld.js']);
-			done();
+			done(err);
 		});
 	});
 
@@ -234,7 +234,7 @@ describe('add', function() {
 			expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), 'test1\n']);
 			expect(data.sourceMap.mappings).toBe('');
 			expect(data.sourceMap.sourceRoot).toBe('test');
-			done();
+			done(err);
 		});
 	});
 
@@ -247,7 +247,7 @@ describe('add', function() {
 			expect(data.sourceMap.sources).toEqual(['helloworld.js', 'http://example2.com/test1.js']);
 			expect(data.sourceMap.sourcesContent).toEqual([null, null]);
 			expect(data.sourceMap.mappings).toBe('');
-			done();
+			done(err);
 		});
 	});
 
@@ -255,10 +255,10 @@ describe('add', function() {
 		var file = makeFile();
 		file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld4.js.map');
 		var hConsole = ''; // Removed
-		sourcemaps.add(file, { loadMaps: true, debug: true }, function() {
+		sourcemaps.add(file, { loadMaps: true, debug: true }, function(err) {
 			expect(hConsole.history.log[0]).toEqual('vinyl-sourcemap-add: No source content for "missingfile". Loading from file.');
 			expect(hConsole.history.warn[0].indexOf('vinyl-sourcemap-add: source file not found: ') === 0).toExist();
-			done();
+			done(err);
 		});
 	});
 
@@ -278,7 +278,7 @@ describe('add', function() {
 			expect(data instanceof File).toExist();
 			expect(data.sourceMap).toBe(sourceMap);
 			expect(data).toEqual(file);
-			done();
+			done(err);
 		});
 	});
 });

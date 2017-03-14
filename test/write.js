@@ -153,7 +153,7 @@ describe('write', function() {
 			expect(updatedFile instanceof File).toExist();
 			expect(updatedFile).toEqual(file);
 			expect(String(updatedFile.contents)).toBe( sourceContent + '\n//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\n');
-			done();
+			done(err);
 		});
 	});
 
@@ -163,7 +163,7 @@ describe('write', function() {
 		sourcemaps.write(file, function(err, data) {
 			var updatedFile = data[0];
 			expect(String(updatedFile.contents)).toBe(sourceContent + '\n/*# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + ' */\n');
-			done();
+			done(err);
 		});
 	});
 
@@ -173,7 +173,7 @@ describe('write', function() {
 		sourcemaps.write(file, function(err, data) {
 			var updatedFile = data[0];
 			expect(String(updatedFile.contents)).toBe(sourceContent);
-			done();
+			done(err);
 		});
 	});
 
@@ -183,7 +183,7 @@ describe('write', function() {
 		sourcemaps.write(file, function(err, data) {
 			var updatedFile = data[0];
 			expect(String(updatedFile.contents)).toBe(sourceContent.replace(/\n/g, '\r\n') + '\r\n//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\r\n');
-			done();
+			done(err);
 		});
 	});
 
@@ -206,7 +206,7 @@ describe('write', function() {
 			expect(sourceMap.stat.isSymbolicLink()).toNotExist();
 			expect(sourceMap.stat.isFIFO()).toNotExist();
 			expect(sourceMap.stat.isSocket()).toNotExist();
-			done();
+			done(err);
 		});
 	});
 
@@ -224,7 +224,7 @@ describe('write', function() {
 			expect(sourceMap instanceof File).toExist();
 			expect(sourceMap.path).toBe(path.join(__dirname, 'maps/helloworld.map'));
 			expect(JSON.parse(sourceMap.contents)).toEqual(updatedFile.sourceMap);
-			done();
+			done(err);
 		});
 	});
 
@@ -233,7 +233,7 @@ describe('write', function() {
 		sourcemaps.write(file, 'dir1/maps', function(err, data) {
 			var updatedFile = data[0];
 			expect(String(updatedFile.contents)).toBe(sourceContent + '\n//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
-			done();
+			done(err);
 		});
 	});
 
@@ -242,7 +242,7 @@ describe('write', function() {
 		sourcemaps.write(file, { addComment: false }, function(err, data) {
 			var updatedFile = data[0];
 			expect(String(updatedFile.contents)).toBe(sourceContent);
-			done();
+			done(err);
 		});
 	});
 
@@ -251,7 +251,7 @@ describe('write', function() {
 		sourcemaps.write(file, { includeContent: false }, function(err, data) {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sourcesContent).toBe(undefined);
-			done();
+			done(err);
 		});
 	});
 
@@ -262,7 +262,7 @@ describe('write', function() {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sourcesContent).toNotBe(undefined);
 			expect(updatedFile.sourceMap.sourcesContent).toEqual([sourceContent]);
-			done();
+			done(err);
 		});
 	});
 
@@ -274,7 +274,7 @@ describe('write', function() {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sourcesContent).toNotBe(undefined);
 			expect(updatedFile.sourceMap.sourcesContent).toEqual([]);
-			done();
+			done(err);
 		});
 	});
 
@@ -283,7 +283,7 @@ describe('write', function() {
 		sourcemaps.write(file, { sourceRoot: '/testSourceRoot' }, function(err, data) {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sourceRoot).toBe('/testSourceRoot');
-			done();
+			done(err);
 		});
 	});
 
@@ -296,7 +296,7 @@ describe('write', function() {
 		}, function(err, data) {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sourceRoot).toBe('/testSourceRoot');
-			done();
+			done(err);
 		});
 	});
 
@@ -308,7 +308,7 @@ describe('write', function() {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../assets');
 			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
 			expect(sourceMap.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
-			done();
+			done(err);
 		});
 	});
 
@@ -320,7 +320,7 @@ describe('write', function() {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../src');
 			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
 			expect(sourceMap.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
-			done();
+			done(err);
 		});
 	});
 
@@ -332,7 +332,7 @@ describe('write', function() {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../..');
 			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
 			expect(sourceMap.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
-			done();
+			done(err);
 		});
 	});
 
@@ -344,7 +344,7 @@ describe('write', function() {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../../src');
 			expect(updatedFile.sourceMap.file).toBe('../../../dir1/dir2/helloworld.js');
 			expect(sourceMap.path).toBe(path.join(__dirname, 'assets/maps/dir1/dir2/helloworld.js.map'));
-			done();
+			done(err);
 		});
 	});
 
@@ -356,7 +356,7 @@ describe('write', function() {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../src');
 			expect(updatedFile.sourceMap.file).toBe('../../../dist/dir1/dir2/helloworld.js');
 			expect(sourceMap.path).toBe(path.join(__dirname, 'maps/dir1/dir2/helloworld.js.map'));
-			done();
+			done(err);
 		});
 	});
 
@@ -368,7 +368,7 @@ describe('write', function() {
 			var updatedFile = data[0];
 			if (/helloworld\.js$/.test(updatedFile.path)) {
 				expect(/sourceMappingURL.*\n$/.exec(String(updatedFile.contents))[0]).toEqual('sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
-				done();
+				done(err);
 			}
 		});
 	});
@@ -383,7 +383,7 @@ describe('write', function() {
 			var updatedFile = data[0];
 			if (/helloworld\.js$/.test(updatedFile.path)) {
 				expect(/sourceMappingURL.*\n$/.exec(String(updatedFile.contents))[0]).toEqual('sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
-				done();
+				done(err);
 			}
 		});
 	});
@@ -393,10 +393,10 @@ describe('write', function() {
 		file.sourceMap.sources[0] += '.invalid';
 		delete file.sourceMap.sourcesContent;
 		var hConsole = ''; // removed
-		sourcemaps.write(file, { debug: true }, function() {
+		sourcemaps.write(file, { debug: true }, function(err) {
 			expect(hConsole.history.log[0]).toBe('vinyl-sourcemap-write: No source content for "helloworld.js.invalid". Loading from file.');
 			expect(hConsole.history.warn[0].indexOf('vinyl-sourcemap-write: source file not found: ') === 0).toExist();
-			done();
+			done(err);
 		});
 	});
 
@@ -405,7 +405,7 @@ describe('write', function() {
 		sourcemaps.write(file, { sourceRoot: null }, function(err, data) {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sourceRoot).toBe(undefined);
-			done();
+			done(err);
 		});
 	});
 
@@ -418,7 +418,7 @@ describe('write', function() {
 		}, function(err, data) {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sourceRoot).toBe(undefined);
-			done();
+			done(err);
 		});
 	});
 
@@ -427,7 +427,7 @@ describe('write', function() {
 		sourcemaps.write(file, { sourceRoot: '' }, function(err, data) {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sourceRoot).toBe('');
-			done();
+			done(err);
 		});
 	});
 
@@ -441,7 +441,7 @@ describe('write', function() {
 			var updatedFile = data[0];
 			if (/helloworld\.js$/.test(updatedFile.path)) {
 				expect(String(updatedFile.contents)).toBe(sourceContent + '\n//# sourceMappingURL=http://maps.example.com/dir1/dir2/helloworld.js.map\n');
-				done();
+				done(err);
 			}
 		});
 	});
@@ -455,7 +455,7 @@ describe('write', function() {
 		}, function(err, data) {
 			var updatedFile = data[0];
 			expect(updatedFile.sourceMap.sources).toEqual(['../src/helloworld.js']);
-			done();
+			done(err);
 		});
 	});
 });
