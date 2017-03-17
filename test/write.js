@@ -20,19 +20,14 @@ function makeSourceMap() {
 	};
 }
 
-function makeFile(addSourcemap) {
-	if (addSourcemap === undefined) {
-		addSourcemap = true;
-	}
+function makeFile() {
 	var file = new File({
 		cwd: __dirname,
 		base: path.join(__dirname, 'assets'),
 		path: path.join(__dirname, 'assets', 'helloworld.js'),
-		contents: new Buffer(sourceContent)
+		contents: new Buffer(sourceContent),
+		sourceMap: makeSourceMap(),
 	});
-	if (addSourcemap === true) {
-		file.sourceMap = makeSourceMap();
-	}
 	return file;
 }
 
@@ -81,11 +76,14 @@ describe('write', function() {
 		});
 	});
 
-	it('should return an error when no sourcemap is found on the file', function(done) {
-		var file = makeFile(false);
-		sourcemaps.write(file, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: No sourcemap found').toExist();
-			done();
+	it('calls back with the untouched file if sourceMap property does not exist', function(done) {
+		var file = makeFile();
+		delete file.sourceMap;
+		sourcemaps.write(file, function(err, outFile) {
+			expect(err).toNotExist();
+			expect(file).toExist();
+			expect(outFile).toEqual(file);
+			done(err);
 		});
 	});
 

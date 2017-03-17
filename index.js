@@ -81,9 +81,12 @@ function write(file, destPath, options, callback) {
 		return callback(new Error(PLUGIN_NAME + '-write: Not a vinyl file'));
 	}
 
-	// Throw an error if the file doesn't have a sourcemap
-	if (!file.sourceMap) {
-		return callback(new Error(PLUGIN_NAME + '-write: No sourcemap found'));
+	if (file.isStream()) {
+		return callback(new Error(PLUGIN_NAME + '-write: Streaming not supported'));
+	}
+
+	if (file.isNull() || !file.sourceMap) {
+		return callback(null, file);
 	}
 
 	// TODO: don't mutate - needs test too
