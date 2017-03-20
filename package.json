@@ -1,6 +1,6 @@
 {
   "name": "vinyl-sourcemap",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Add sourcemaps to vinyl files, extracted from gulp-sourcemaps by Florian Reiterer (https://github.com/floridoo/gulp-sourcemaps)",
   "main": "index.js",
   "scripts": {
