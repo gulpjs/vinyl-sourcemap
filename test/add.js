@@ -39,56 +39,103 @@ function makeFileWithInlineSourceMap() {
 
 describe('add', function() {
 
-	it('should not accept null as argument', function(done) {
-		sourcemaps.add(null, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
-			done();
+	describe('ensures file argument', function() {
+
+		it('is not undefined', function(done) {
+			sourcemaps.add(undefined, function(err) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
+				done();
+			});
+		});
+
+		it('is not null', function(done) {
+			sourcemaps.add(null, function(err) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
+				done();
+			});
+		});
+
+		it('is not a plain object', function(done) {
+			sourcemaps.add({}, function(err) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
+				done();
+			});
+		});
+
+		// TODO: seems like a bad test
+		it('is not a stream', function(done) {
+			sourcemaps.add(new stream.Readable(), function(err) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
+				done();
+			});
+		});
+
+		it('is a vinyl object', function(done) {
+			var file = makeFile();
+			sourcemaps.add(file, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
 		});
 	});
 
-	it('should not accept an empty object as argument', function(done) {
-		sourcemaps.add({}, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
-			done();
-		});
-	});
+	describe('ensures options argument', function() {
 
-	it('should not accept a stream as argument', function(done) {
-		sourcemaps.add(new stream.Readable(), function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Not a vinyl file').toExist();
-			done();
-		});
-	});
 
-	it('should not accept undefined as options argument', function(done) {
-		var file = makeFile();
-		sourcemaps.add(file, undefined, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
-			done();
+		it('is defaulted if undefined', function(done) {
+			var file = makeFile();
+			sourcemaps.add(file, undefined, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
 		});
-	});
 
-	it('should not accept null as options argument', function(done) {
-		var file = makeFile();
-		sourcemaps.add(file, null, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
-			done();
+		it('is defaulted if null', function(done) {
+			var file = makeFile();
+			sourcemaps.add(file, null, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
 		});
-	});
 
-	it('should not accept empty string as options argument', function(done) {
-		var file = makeFile();
-		sourcemaps.add(file, '', function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
-			done();
+		it('is defaulted if empty string', function(done) {
+			var file = makeFile();
+			sourcemaps.add(file, '', function(err) {
+				expect(err).toNotExist();
+				done();
+			});
 		});
-	});
 
-	it('should not accept boolean as options argument', function(done) {
-		var file = makeFile();
-		sourcemaps.add(file, true, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Invalid argument: options').toExist();
-			done();
+		it('is defaulted if non-empty string', function(done) {
+			var file = makeFile();
+			sourcemaps.add(file, 'invalid', function(err) {
+				expect(err).toNotExist();
+				done();
+			});
+		});
+
+		it('is defaulted if boolean false', function(done) {
+			var file = makeFile();
+			sourcemaps.add(file, false, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
+		});
+
+		it('is defaulted if boolean true', function(done) {
+			var file = makeFile();
+			sourcemaps.add(file, true, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
+		});
+
+		it('is defaulted if array', function(done) {
+			var file = makeFile();
+			sourcemaps.add(file, [], function(err) {
+				expect(err).toNotExist();
+				done();
+			});
 		});
 	});
 
