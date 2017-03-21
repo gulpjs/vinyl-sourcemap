@@ -10,12 +10,6 @@ function isObject(value) {
 	return value && typeof value === 'object' && !Array.isArray(value);
 }
 
-/**
- * Add a sourcemap to a vinyl file (async, with callback function)
- * @param file
- * @param options
- * @param callback
- */
 function add(file, options, callback) {
 
 	// Check if options or a callback are passed as second argument
@@ -53,13 +47,6 @@ function add(file, options, callback) {
 	helpers.addSourceMaps(file, state, options, callback);
 }
 
-/**
- * Write the sourcemap (async, with callback function)
- * @param file
- * @param destPath
- * @param options
- * @param callback
- */
 function write(file, options, callback) {
 
 	// Check if options or a callback are passed as second argument
