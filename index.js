@@ -85,9 +85,6 @@ function write(file, options, callback) {
 	if (options.addComment === undefined) {
 		options.addComment = true;
 	}
-	if (options.charset === undefined) {
-		options.charset = 'utf8';
-	}
 
 	var sourceMap = file.sourceMap;
 
