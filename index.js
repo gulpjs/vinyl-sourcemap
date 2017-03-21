@@ -54,24 +54,12 @@ function add(file, options, callback) {
  * @param options
  * @param callback
  */
-function write(file, destPath, options, callback) {
+function write(file, options, callback) {
 
 	// Check arguments for optional destPath, options, or callback function
-	if (callback === undefined && typeof destPath === 'function') {
-		callback = destPath;
-		destPath = undefined;
-	}	else if (callback === undefined && typeof options === 'function') {
+	if (typeof options === 'function') {
 		callback = options;
-		if (Object.prototype.toString.call(destPath) === '[object Object]') {
-			options = destPath;
-			destPath = undefined;
-		} else if (typeof destPath === 'string') {
-			options = {};
-		} else {
-			return callback(new Error(PLUGIN_NAME + '-write: Invalid arguments'));
-		}
-	} else if (Object.prototype.toString.call(options) !== '[object Object]') {
-		return callback(new Error(PLUGIN_NAME + '-write: Invalid argument: options'));
+		options = {};
 	}
 
 	options = options || {};
@@ -128,7 +116,7 @@ function write(file, destPath, options, callback) {
 	}
 
 	var state = {
-		destPath: destPath,
+		destPath: options.path,
 		sourceMap: sourceMap,
 		sourceMapFile: null,
 	};
