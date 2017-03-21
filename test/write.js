@@ -90,7 +90,7 @@ describe('write', function() {
 	it('should return an error when invalid arguments are provided', function(done) {
 		var file = makeFile();
 		sourcemaps.write(file, undefined, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist();
+			expect(err).toNotExist();
 			done();
 		});
 	});
@@ -98,7 +98,7 @@ describe('write', function() {
 	it('should return an error when invalid arguments are provided', function(done) {
 		var file = makeFile();
 		sourcemaps.write(file, null, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist();
+			expect(err).toNotExist();
 			done();
 		});
 	});
@@ -106,39 +106,7 @@ describe('write', function() {
 	it('should return an error when invalid arguments are provided', function(done) {
 		var file = makeFile();
 		sourcemaps.write(file, true, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid arguments').toExist();
-			done();
-		});
-	});
-
-	it('should return an error when invalid options are provided', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, 'test', undefined, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist();
-			done();
-		});
-	});
-
-	it('should return an error when invalid options are provided', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, 'test', null, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist();
-			done();
-		});
-	});
-
-	it('should return an error when invalid options are provided', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, 'test', '', function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist();
-			done();
-		});
-	});
-
-	it('should return an error when invalid options are provided', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, 'test', true, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Invalid argument: options').toExist();
+			expect(err).toNotExist();
 			done();
 		});
 	});
@@ -185,7 +153,7 @@ describe('write', function() {
 
 	it('should write external map files', function(done) {
 		var file = makeFile();
-		sourcemaps.write(file, '../maps', { destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
+		sourcemaps.write(file, { path: '../maps', destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile instanceof File).toExist();
 			expect(updatedFile).toEqual(file);
 			expect(String(updatedFile.contents)).toBe(sourceContent + '\n//# sourceMappingURL=../maps/helloworld.js.map\n');
@@ -206,7 +174,7 @@ describe('write', function() {
 
 	it.skip('should allow to rename map file', function(done) {
 		var file = makeFile();
-		sourcemaps.write(file, '../maps', { mapFile: function(mapFile) {
+		sourcemaps.write(file, { path: '../maps', mapFile: function(mapFile) {
 			return mapFile.replace('.js.map', '.map');
 		}, destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile instanceof File).toExist();
@@ -222,7 +190,7 @@ describe('write', function() {
 
 	it('should create shortest path to map in file comment', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, 'dir1/maps', function(err, updatedFile) {
+		sourcemaps.write(file, { path: 'dir1/maps' }, function(err, updatedFile) {
 			expect(String(updatedFile.contents)).toBe(sourceContent + '\n//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
 			done(err);
 		});
@@ -287,7 +255,7 @@ describe('write', function() {
 
 	it('should automatically determine sourceRoot if destPath is set', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, '.', { destPath: 'dist', includeContent: false }, function(err, updatedFile, sourceMapFile) {
+		sourcemaps.write(file, { path: '.', destPath: 'dist', includeContent: false }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../assets');
 			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
 			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
@@ -297,7 +265,7 @@ describe('write', function() {
 
 	it('should interpret relative path in sourceRoot as relative to destination', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, '.', { sourceRoot: '../src' }, function(err, updatedFile, sourceMapFile) {
+		sourcemaps.write(file, { path: '.', sourceRoot: '../src' }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../src');
 			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
 			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
@@ -307,7 +275,7 @@ describe('write', function() {
 
 	it('should interpret relative path in sourceRoot as relative to destination (part 2)', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, '.', { sourceRoot: '' }, function(err, updatedFile, sourceMapFile) {
+		sourcemaps.write(file, { path: '.', sourceRoot: '' }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../..');
 			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
 			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
@@ -317,7 +285,7 @@ describe('write', function() {
 
 	it('should interpret relative path in sourceRoot as relative to destination (part 3)', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, 'maps', { sourceRoot: '../src' }, function(err, updatedFile, sourceMapFile) {
+		sourcemaps.write(file, { path: 'maps', sourceRoot: '../src' }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../../src');
 			expect(updatedFile.sourceMap.file).toBe('../../../dir1/dir2/helloworld.js');
 			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/maps/dir1/dir2/helloworld.js.map'));
@@ -327,7 +295,7 @@ describe('write', function() {
 
 	it('should interpret relative path in sourceRoot as relative to destination (part 4)', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, '../maps', { sourceRoot: '../src', destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
+		sourcemaps.write(file, { path: '../maps', sourceRoot: '../src', destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../src');
 			expect(updatedFile.sourceMap.file).toBe('../../../dist/dir1/dir2/helloworld.js');
 			expect(sourceMapFile.path).toBe(path.join(__dirname, 'maps/dir1/dir2/helloworld.js.map'));
@@ -337,7 +305,8 @@ describe('write', function() {
 
 	it('should accept a sourceMappingURLPrefix', function(done) {
 		var file = makeFile();
-		sourcemaps.write(file, '../maps', {
+		sourcemaps.write(file, {
+			path: '../maps',
 			sourceMappingURLPrefix: 'https://asset-host.example.com'
 		}, function(err, updatedFile) {
 			if (/helloworld\.js$/.test(updatedFile.path)) {
@@ -349,7 +318,8 @@ describe('write', function() {
 
 	it.skip('should accept a sourceMappingURLPrefix, as a function', function(done) {
 		var file = makeFile();
-		sourcemaps.write(file, '../maps', {
+		sourcemaps.write(file, {
+			path: '../maps',
 			sourceMappingURLPrefix: function() {
 				return 'https://asset-host.example.com';
 			}
@@ -403,7 +373,8 @@ describe('write', function() {
 
 	it.skip('should be able to fully control sourceMappingURL by the option sourceMappingURL', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, '../aaa/bbb/', {
+		sourcemaps.write(file, {
+			path: '../aaa/bbb/',
 			sourceMappingURL: function(file) {
 				return 'http://maps.example.com/' + file.relative + '.map';
 			}
