@@ -48,31 +48,102 @@ function base64JSON(object) {
 
 describe('write', function() {
 
-	it('should return an error when on valid vinyl file is provided', function(done) {
-		sourcemaps.write(undefined, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
-			done();
+	describe('ensures file argument', function() {
+
+		it('is not undefined', function(done) {
+			sourcemaps.write(undefined, function(err) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
+				done();
+			});
+		});
+
+		it('is not null', function(done) {
+			sourcemaps.write(null, function(err) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
+				done();
+			});
+		});
+
+		it('is not a plain object', function(done) {
+			sourcemaps.write({}, function(err) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
+				done();
+			});
+		});
+
+		// TODO: seems like a bad test
+		it('is not a stream', function(done) {
+			sourcemaps.write(new stream.Readable(), function(err) {
+				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
+				done();
+			});
+		});
+
+		it('is a vinyl object', function(done) {
+			var file = makeFile();
+			sourcemaps.write(file, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
 		});
 	});
 
-	it('should return an error when on valid vinyl file is provided', function(done) {
-		sourcemaps.write(null, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
-			done();
-		});
-	});
+	describe('ensures options argument', function() {
 
-	it('should return an error when on valid vinyl file is provided', function(done) {
-		sourcemaps.write({}, function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
-			done();
+		it('is defaulted if undefined', function(done) {
+			var file = makeFile();
+			sourcemaps.write(file, undefined, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
 		});
-	});
 
-	it('should return an error when on valid vinyl file is provided', function(done) {
-		sourcemaps.write(new stream.Readable(), function(err) {
-			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
-			done();
+		it('is defaulted if null', function(done) {
+			var file = makeFile();
+			sourcemaps.write(file, null, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
+		});
+
+		it('is defaulted if empty string', function(done) {
+			var file = makeFile();
+			sourcemaps.write(file, '', function(err) {
+				expect(err).toNotExist();
+				done();
+			});
+		});
+
+		it('is defaulted if non-empty string', function(done) {
+			var file = makeFile();
+			sourcemaps.write(file, 'invalid', function(err) {
+				expect(err).toNotExist();
+				done();
+			});
+		});
+
+		it('is defaulted if boolean false', function(done) {
+			var file = makeFile();
+			sourcemaps.write(file, false, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
+		});
+
+		it('is defaulted if boolean true', function(done) {
+			var file = makeFile();
+			sourcemaps.write(file, true, function(err) {
+				expect(err).toNotExist();
+				done();
+			});
+		});
+
+		it('is defaulted if array', function(done) {
+			var file = makeFile();
+			sourcemaps.write(file, [], function(err) {
+				expect(err).toNotExist();
+				done();
+			});
 		});
 	});
 
@@ -84,30 +155,6 @@ describe('write', function() {
 			expect(file).toExist();
 			expect(outFile).toEqual(file);
 			done(err);
-		});
-	});
-
-	it('should return an error when invalid arguments are provided', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, undefined, function(err) {
-			expect(err).toNotExist();
-			done();
-		});
-	});
-
-	it('should return an error when invalid arguments are provided', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, null, function(err) {
-			expect(err).toNotExist();
-			done();
-		});
-	});
-
-	it('should return an error when invalid arguments are provided', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, true, function(err) {
-			expect(err).toNotExist();
-			done();
 		});
 	});
 

@@ -6,6 +6,10 @@ var helpers = require('./lib/helpers');
 
 var PLUGIN_NAME = 'vinyl-sourcemap';
 
+function isObject(value) {
+	return value && typeof value === 'object' && !Array.isArray(value);
+}
+
 /**
  * Add a sourcemap to a vinyl file (async, with callback function)
  * @param file
@@ -14,21 +18,23 @@ var PLUGIN_NAME = 'vinyl-sourcemap';
  */
 function add(file, options, callback) {
 
-	// check if options are passed or a callback as second argument
-	// if there are 3 arguments, the options param should be an object
+	// Check if options or a callback are passed as second argument
 	if (typeof options === 'function') {
 		callback = options;
 		options = {};
-	} else if (!options || typeof options !== 'object') {
-		return callback(new Error(PLUGIN_NAME + '-add: Invalid argument: options'));
 	}
 
-	// Throw an error if the file argument is not a vinyl file
+	// Default options if not an object
+	if (!isObject(options)) {
+		options = {};
+	}
+
+	// Bail early an error if the file argument is not a Vinyl file
 	if (!File.isVinyl(file)) {
 		return callback(new Error(PLUGIN_NAME + '-add: Not a vinyl file'));
 	}
 
-	// Return the file if already has sourcemaps
+	// Bail early successfully if file already has sourcemap
 	if (file.sourceMap) {
 		return callback(null, file);
 	}
@@ -56,23 +62,30 @@ function add(file, options, callback) {
  */
 function write(file, options, callback) {
 
-	// Check arguments for optional destPath, options, or callback function
+	// Check if options or a callback are passed as second argument
 	if (typeof options === 'function') {
 		callback = options;
 		options = {};
 	}
 
-	options = options || {};
+	// Default options if not an object
+	if (!isObject(options)) {
+		options = {};
+	}
 
-	// Throw an error if the file argument is not a vinyl file
+	// Bail early with an error if the file argument is not a Vinyl file
 	if (!File.isVinyl(file)) {
 		return callback(new Error(PLUGIN_NAME + '-write: Not a vinyl file'));
 	}
 
+	// Bail early with an error if file has streaming contents
+	// TODO: needs test
 	if (file.isStream()) {
 		return callback(new Error(PLUGIN_NAME + '-write: Streaming not supported'));
 	}
 
+	// Bail early successfully if file is null or doesn't have sourcemap
+	// TODO: needs test (at least for null contents?)
 	if (file.isNull() || !file.sourceMap) {
 		return callback(null, file);
 	}
