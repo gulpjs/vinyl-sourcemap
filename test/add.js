@@ -81,6 +81,19 @@ describe('add', function() {
 
 	describe('ensures options argument', function() {
 
+		// Currently no options are defaulted
+		// TODO: Enable test if any options are defaulted
+		it.skip('is not mutated', function(done) {
+			var defaultedOpts = {};
+
+			var opts = {};
+
+			var file = makeFile();
+			sourcemaps.add(file, opts, function(err) {
+				expect(opts).toNotEqual(defaultedOpts);
+				done(err);
+			});
+		});
 
 		it('is defaulted if undefined', function(done) {
 			var file = makeFile();

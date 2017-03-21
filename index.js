@@ -1,6 +1,7 @@
 'use strict';
 
 var File = require('vinyl');
+var defaults = require('object.defaults');
 
 var helpers = require('./lib/helpers');
 
@@ -77,14 +78,11 @@ function write(file, options, callback) {
 		return callback(null, file);
 	}
 
-	// TODO: don't mutate - needs test too
-	// set defaults for options if unset
-	if (options.includeContent === undefined) {
-		options.includeContent = true;
-	}
-	if (options.addComment === undefined) {
-		options.addComment = true;
-	}
+	// Set defaults for options if unset
+	var opts = defaults({}, options, {
+		includeContent: true,
+		addComment: true,
+	});
 
 	var sourceMap = file.sourceMap;
 
@@ -113,12 +111,12 @@ function write(file, options, callback) {
 	}
 
 	var state = {
-		destPath: options.path,
+		destPath: opts.path,
 		sourceMap: sourceMap,
 		sourceMapFile: null,
 	};
 
-	helpers.writeSourceMaps(file, state, options, callback);
+	helpers.writeSourceMaps(file, state, opts, callback);
 }
 
 module.exports = {

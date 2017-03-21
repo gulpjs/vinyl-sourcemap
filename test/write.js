@@ -92,6 +92,21 @@ describe('write', function() {
 
 	describe('ensures options argument', function() {
 
+		it('is not mutated', function(done) {
+			var defaultedOpts = {
+				includeContent: true,
+				addComment: true,
+			};
+
+			var opts = {};
+
+			var file = makeFile();
+			sourcemaps.write(file, opts, function(err) {
+				expect(opts).toNotEqual(defaultedOpts);
+				done(err);
+			});
+		});
+
 		it('is defaulted if undefined', function(done) {
 			var file = makeFile();
 			sourcemaps.write(file, undefined, function(err) {
