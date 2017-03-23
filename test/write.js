@@ -448,18 +448,6 @@ describe('write', function() {
 		});
 	});
 
-	it('should allow to change sources', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, {
-			mapSources: function(sourcePath) {
-				return '../src/' + sourcePath;
-			}
-		}, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sources).toEqual(['../src/helloworld.js']);
-			done(err);
-		});
-	});
-
 	it('should create shortest path to file in sourceMap#file', function(done) {
 		var file = makeNestedFile();
 		sourcemaps.write(file, { path: 'dir1/maps' }, function(err, updatedFile) {
