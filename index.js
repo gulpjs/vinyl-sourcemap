@@ -89,14 +89,8 @@ function write(file, options, callback) {
 	// fix paths if Windows style paths
 	sourceMap.file = helpers.unixStylePath(file.relative);
 
-	// TODO: Need a way to handle resolve this before passing in
-	// This module shouldn't be taking function options because they are normalized higher
-	if (options.mapSources && typeof options.mapSources === 'function') {
-		sourceMap.sources = sourceMap.sources.map(function(filePath) {
-			return options.mapSources(filePath);
-		});
-	}
-
+	// TODO: should we be normalizing at all?
+	// An end-user can use @gulp-sourcemaps/map-sources if they need normalization
 	sourceMap.sources = sourceMap.sources.map(function(filePath) {
 		return helpers.unixStylePath(filePath);
 	});
