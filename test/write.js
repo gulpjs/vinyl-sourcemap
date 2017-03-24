@@ -236,22 +236,6 @@ describe('write', function() {
 		});
 	});
 
-	it.skip('should allow to rename map file', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, { path: '../maps', mapFile: function(mapFile) {
-			return mapFile.replace('.js.map', '.map');
-		}, destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
-			expect(updatedFile instanceof File).toExist();
-			expect(updatedFile).toEqual(file);
-			expect(String(updatedFile.contents)).toBe(sourceContent + '\n//# sourceMappingURL=../maps/helloworld.map\n');
-			expect(updatedFile.sourceMap.file).toBe('../dist/helloworld.js');
-			expect(sourceMapFile instanceof File).toExist();
-			expect(sourceMapFile.path).toBe(path.join(__dirname, 'maps/helloworld.map'));
-			expect(JSON.parse(sourceMapFile.contents)).toEqual(updatedFile.sourceMap);
-			done(err);
-		});
-	});
-
 	it('should create shortest path to map in file comment', function(done) {
 		var file = makeNestedFile();
 		sourcemaps.write(file, { path: 'dir1/maps' }, function(err, updatedFile) {

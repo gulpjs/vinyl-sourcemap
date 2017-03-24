@@ -87,6 +87,8 @@ function write(file, options, callback) {
 	var sourceMap = file.sourceMap;
 
 	// fix paths if Windows style paths
+	// TODO: should we be normalizing at all?
+	// An end-user can use @gulp-sourcemaps/map-file if they need normalization
 	sourceMap.file = helpers.unixStylePath(file.relative);
 
 	// TODO: should we be normalizing at all?
