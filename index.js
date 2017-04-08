@@ -34,18 +34,19 @@ function add(file, options, callback) {
 		return callback(null, file);
 	}
 
-	var state = {
-		path: '', //root path for the sources in the map
-		map: null,
-		content: file.contents.toString(),
-		preExistingComment: null
+	var sourcePath = unixStylePath(file.relative);
+	var contents = file.contents.toString();
+
+	file.sourceMap = {
+		file: sourcePath,
+		version: 3,
+		names: [],
+		mappings: '',
+		sources: [sourcePath],
+		sourcesContent: [contents]
 	};
 
-	if (options.loadMaps) {
-		helpers.loadInlineMaps(file, state);
-	}
-
-	helpers.addSourceMaps(file, state, options, callback);
+	callback(null, file);
 }
 
 function write(file, options, callback) {
