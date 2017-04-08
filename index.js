@@ -20,6 +20,7 @@ function add(file, options, callback) {
 	}
 
 	// Default options if not an object
+	// TODO: do we even need options?
 	if (!isObject(options)) {
 		options = {};
 	}
@@ -35,6 +36,7 @@ function add(file, options, callback) {
 	}
 
 	var sourcePath = unixStylePath(file.relative);
+	// TODO: We should probably support streaming if possible
 	var contents = file.contents.toString();
 
 	file.sourceMap = {
