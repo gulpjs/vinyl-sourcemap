@@ -165,34 +165,6 @@ describe('add', function() {
 		});
 	});
 
-	it('should add a valid source if wished', function(done) {
-		sourcemaps.add(makeFile(), { identityMap: true }, function(err, data) {
-			expect(data).toExist();
-			expect(data).toExist();
-			expect(data.sourceMap).toExist();
-			expect(String(data.sourceMap.version)).toBe('3');
-			expect(data.sourceMap.sources[0]).toBe('helloworld.js');
-			expect(data.sourceMap.sourcesContent[0]).toBe(sourceContent);
-			expect(data.sourceMap.names).toEqual(['helloWorld', 'console','log']);
-			expect(data.sourceMap.mappings).toBe('AAAA,YAAY;;AAEZ,SAASA,UAAU,CAAC,EAAE;CACrBC,OAAO,CAACC,GAAG,CAAC,cAAc,CAAC;AAC5B');
-			done(err);
-		});
-	});
-
-	it('should add a valid source map for CSS if wished', function(done) {
-		sourcemaps.add(makeFileCSS(), { identityMap: true }, function(err, data) {
-			expect(data).toExist();
-			expect(data instanceof File).toExist();
-			expect(data.sourceMap).toExist();
-			expect(String(data.sourceMap.version)).toBe('3');
-			expect(data.sourceMap.sources[0]).toBe('test.css');
-			expect(data.sourceMap.sourcesContent[0]).toBe(sourceContentCSS);
-			expect(data.sourceMap.names).toEqual([]);
-			expect(data.sourceMap.mappings).toBe('CAAC;EACC;EACA');
-			done(err);
-		});
-	});
-
 	it('should import an existing inline source map', function(done) {
 		sourcemaps.add(makeFileWithInlineSourceMap(), { loadMaps: true }, function(err, data) {
 			expect(data).toExist();
