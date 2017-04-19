@@ -242,14 +242,6 @@ describe('write', function() {
 		});
 	});
 
-	it('should write no comment with option addComment=false', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, { addComment: false }, function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toBe(sourceContent);
-			done(err);
-		});
-	});
-
 	it('should not include source content with option includeContent=false', function(done) {
 		var file = makeFile();
 		sourcemaps.write(file, { includeContent: false }, function(err, updatedFile) {
