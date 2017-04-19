@@ -90,7 +90,7 @@ describe('write', function() {
 		});
 	});
 
-	describe('ensures options argument', function() {
+	describe.skip('ensures destPath argument', function() {
 
 		it('is not mutated', function(done) {
 			var defaultedOpts = {
@@ -217,7 +217,7 @@ describe('write', function() {
 
 	it.skip('should write external map files', function(done) {
 		var file = makeFile();
-		sourcemaps.write(file, { path: '../maps', destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
+		sourcemaps.write(file, '../maps', function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile instanceof File).toExist();
 			expect(updatedFile).toEqual(file);
 			expect(String(updatedFile.contents)).toBe(sourceContent + '//# sourceMappingURL=../maps/helloworld.js.map\n');
@@ -238,7 +238,7 @@ describe('write', function() {
 
 	it('should create shortest path to map in file comment', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, { path: 'dir1/maps' }, function(err, updatedFile) {
+		sourcemaps.write(file, 'dir1/maps', function(err, updatedFile) {
 			expect(String(updatedFile.contents)).toBe(sourceContent + '//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
 			done(err);
 		});
@@ -265,36 +265,9 @@ describe('write', function() {
 		});
 	});
 
-	it.skip('should output an error message if debug option is set and sourceContent is missing', function(done) {
-		var file = makeFile();
-		file.sourceMap.sources[0] += '.invalid';
-		delete file.sourceMap.sourcesContent;
-		var hConsole = ''; // removed
-		sourcemaps.write(file, { debug: true }, function(err) {
-			expect(hConsole.history.log[0]).toBe('vinyl-sourcemap-write: No source content for "helloworld.js.invalid". Loading from file.');
-			expect(hConsole.history.warn[0].indexOf('vinyl-sourcemap-write: source file not found: ') === 0).toExist();
-			done(err);
-		});
-	});
-
-	it.skip('should be able to fully control sourceMappingURL by the option sourceMappingURL', function(done) {
-		var file = makeNestedFile();
-		sourcemaps.write(file, {
-			path: '../aaa/bbb/',
-			sourceMappingURL: function(file) {
-				return 'http://maps.example.com/' + file.relative + '.map';
-			}
-		}, function(err, updatedFile) {
-			if (/helloworld\.js$/.test(updatedFile.path)) {
-				expect(String(updatedFile.contents)).toBe(sourceContent + '//# sourceMappingURL=http://maps.example.com/dir1/dir2/helloworld.js.map\n');
-				done(err);
-			}
-		});
-	});
-
 	it('should create shortest path to file in sourceMap#file', function(done) {
 		var file = makeNestedFile();
-		sourcemaps.write(file, { path: 'dir1/maps' }, function(err, updatedFile) {
+		sourcemaps.write(file, 'dir1/maps', function(err, updatedFile) {
 			expect(updatedFile.sourceMap.file).toEqual('../../../dir2/helloworld.js');
 			done(err);
 		});
