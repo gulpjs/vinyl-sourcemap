@@ -1,29 +1,13 @@
 'use strict';
 
 var File = require('vinyl');
-var defaults = require('object.defaults');
 var normalizePath = require('normalize-path');
 
 var helpers = require('./lib/helpers');
 
 var PLUGIN_NAME = 'vinyl-sourcemap';
 
-function isObject(value) {
-	return value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function add(file, options, callback) {
-
-	// Check if options or a callback are passed as second argument
-	if (typeof options === 'function') {
-		callback = options;
-		options = {};
-	}
-
-	// Default options if not an object
-	if (!isObject(options)) {
-		options = {};
-	}
+function add(file, callback) {
 
 	// Bail early an error if the file argument is not a Vinyl file
 	if (!File.isVinyl(file)) {
@@ -45,17 +29,12 @@ function add(file, options, callback) {
 	helpers.addSourceMaps(file, state, callback);
 }
 
-function write(file, options, callback) {
+function write(file, destPath, callback) {
 
 	// Check if options or a callback are passed as second argument
-	if (typeof options === 'function') {
-		callback = options;
-		options = {};
-	}
-
-	// Default options if not an object
-	if (!isObject(options)) {
-		options = {};
+	if (typeof destPath === 'function') {
+		callback = destPath;
+		destPath = undefined;
 	}
 
 	// Bail early with an error if the file argument is not a Vinyl file
@@ -74,9 +53,6 @@ function write(file, options, callback) {
 	if (file.isNull() || !file.sourceMap) {
 		return callback(null, file);
 	}
-
-	// Set defaults for options if unset
-	var opts = defaults({}, options);
 
 	var sourceMap = file.sourceMap;
 
@@ -97,7 +73,7 @@ function write(file, options, callback) {
 	}
 
 	var state = {
-		destPath: opts.path,
+		destPath: destPath,
 		sourceMap: sourceMap,
 		sourceMapFile: null,
 	};

@@ -79,79 +79,6 @@ describe('add', function() {
 		});
 	});
 
-	describe('ensures options argument', function() {
-
-		// Currently no options are defaulted
-		// TODO: Enable test if any options are defaulted
-		it.skip('is not mutated', function(done) {
-			var defaultedOpts = {};
-
-			var opts = {};
-
-			var file = makeFile();
-			sourcemaps.add(file, opts, function(err) {
-				expect(opts).toNotEqual(defaultedOpts);
-				done(err);
-			});
-		});
-
-		it('is defaulted if undefined', function(done) {
-			var file = makeFile();
-			sourcemaps.add(file, undefined, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
-		});
-
-		it('is defaulted if null', function(done) {
-			var file = makeFile();
-			sourcemaps.add(file, null, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
-		});
-
-		it('is defaulted if empty string', function(done) {
-			var file = makeFile();
-			sourcemaps.add(file, '', function(err) {
-				expect(err).toNotExist();
-				done();
-			});
-		});
-
-		it('is defaulted if non-empty string', function(done) {
-			var file = makeFile();
-			sourcemaps.add(file, 'invalid', function(err) {
-				expect(err).toNotExist();
-				done();
-			});
-		});
-
-		it('is defaulted if boolean false', function(done) {
-			var file = makeFile();
-			sourcemaps.add(file, false, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
-		});
-
-		it('is defaulted if boolean true', function(done) {
-			var file = makeFile();
-			sourcemaps.add(file, true, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
-		});
-
-		it('is defaulted if array', function(done) {
-			var file = makeFile();
-			sourcemaps.add(file, [], function(err) {
-				expect(err).toNotExist();
-				done();
-			});
-		});
-	});
-
 	it('should add an empty sourceMap', function(done) {
 		sourcemaps.add(makeFile(), function(err, data) {
 			expect(File.isVinyl(data)).toExist();
@@ -166,7 +93,7 @@ describe('add', function() {
 	});
 
 	it('should import an existing inline source map', function(done) {
-		sourcemaps.add(makeFileWithInlineSourceMap(), { loadMaps: true }, function(err, data) {
+		sourcemaps.add(makeFileWithInlineSourceMap(), function(err, data) {
 			expect(data).toExist();
 			expect(data instanceof File).toExist();
 			expect(data.sourceMap).toExist();
@@ -179,7 +106,7 @@ describe('add', function() {
 	});
 
 	it('should remove inline source', function(done) {
-		sourcemaps.add(makeFileWithInlineSourceMap(), { loadMaps: true }, function(err, data) {
+		sourcemaps.add(makeFileWithInlineSourceMap(), function(err, data) {
 			expect(/sourceMappingURL/.test(data.contents.toString())).toNotExist();
 			done(err);
 		});
@@ -188,7 +115,7 @@ describe('add', function() {
 	it('should load external source map file reference in comment with \/\/# syntax', function(done) {
 		var file = makeFile();
 		file.contents = new Buffer(sourceContent +  '\n//# sourceMappingURL=helloworld2.js.map');
-		sourcemaps.add(file, { loadMaps: true }, function(err, data) {
+		sourcemaps.add(file, function(err, data) {
 			expect(data.sourceMap).toExist();
 			expect(String(data.sourceMap.version)).toBe('3');
 			expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
@@ -201,7 +128,7 @@ describe('add', function() {
 	it('should remove source map comment with the \/\/# syntax', function(done) {
 		var file = makeFile();
 		file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld2.js.map');
-		sourcemaps.add(file, { loadMaps: true }, function(err, data) {
+		sourcemaps.add(file, function(err, data) {
 			expect(/sourceMappingURL/.test(data.contents.toString())).toNotExist();
 			done(err);
 		});
@@ -210,7 +137,7 @@ describe('add', function() {
 	it('should load external source map if no source mapping comment', function (done) {
 		var file = makeFile();
 		file.path = file.path.replace('helloworld.js', 'helloworld2.js');
-		sourcemaps.add(file, { loadMaps: true }, function(err, data) {
+		sourcemaps.add(file, function(err, data) {
 			expect(data.sourceMap).toExist();
 			expect(String(data.sourceMap.version)).toBe('3');
 			expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
@@ -223,7 +150,7 @@ describe('add', function() {
 	it('should load external source map and add sourceContent if missing', function(done) {
 		var file = makeFile();
 		file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld3.js.map');
-		sourcemaps.add(file, { loadMaps: true }, function(err, data) {
+		sourcemaps.add(file, function(err, data) {
 			expect(data.sourceMap).toExist();
 			expect(String(data.sourceMap.version)).toBe('3');
 			expect(data.sourceMap.sources).toEqual(['helloworld.js', 'test1.js']);
@@ -236,7 +163,7 @@ describe('add', function() {
 	it('should not throw when source file for sourceContent not found', function(done) {
 		var file = makeFile();
 		file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld4.js.map');
-		sourcemaps.add(file, { loadMaps: true }, function(err, data) {
+		sourcemaps.add(file, function(err, data) {
 			expect(data.sourceMap).toExist();
 			expect(String(data.sourceMap.version)).toBe('3');
 			expect(data.sourceMap.sources).toEqual(['helloworld.js', 'missingfile']);
@@ -259,7 +186,7 @@ describe('add', function() {
 	it('should use sourceRoot when resolving path to sources', function(done) {
 		var file = makeFile();
 		file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld5.js.map');
-		sourcemaps.add(file, { loadMaps:true }, function(err, data) {
+		sourcemaps.add(file, function(err, data) {
 			expect(data.sourceMap).toExist([]);
 			expect(String(data.sourceMap.version)).toBe('3');
 			expect(data.sourceMap.sources).toEqual(['../helloworld.js', '../test1.js']);
@@ -273,23 +200,12 @@ describe('add', function() {
 	it('should not load source conent if the path is a url', function(done) {
 		var file = makeFile();
 		file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld6.js.map');
-		sourcemaps.add(file, { loadMaps: true }, function(err, data) {
+		sourcemaps.add(file, function(err, data) {
 			expect(data.sourceMap).toExist();
 			expect(String(data.sourceMap.version)).toBe('3');
 			expect(data.sourceMap.sources).toEqual(['helloworld.js', 'http://example2.com/test1.js']);
 			expect(data.sourceMap.sourcesContent).toEqual([null, null]);
 			expect(data.sourceMap.mappings).toBe('');
-			done(err);
-		});
-	});
-
-	it.skip('should output an error message if debug option is set and sourceContent is missing', function (done) {
-		var file = makeFile();
-		file.contents = new Buffer(sourceContent + '\n//# sourceMappingURL=helloworld4.js.map');
-		var hConsole = ''; // Removed
-		sourcemaps.add(file, { loadMaps: true, debug: true }, function(err) {
-			expect(hConsole.history.log[0]).toEqual('vinyl-sourcemap-add: No source content for "missingfile". Loading from file.');
-			expect(hConsole.history.warn[0].indexOf('vinyl-sourcemap-add: source file not found: ') === 0).toExist();
 			done(err);
 		});
 	});
@@ -305,7 +221,7 @@ describe('add', function() {
 
 		var file = makeFile();
 		file.sourceMap = sourceMap;
-		sourcemaps.add(file, { loadMaps:true }, function(err, data) {
+		sourcemaps.add(file, function(err, data) {
 			expect(data).toExist();
 			expect(data instanceof File).toExist();
 			expect(data.sourceMap).toBe(sourceMap);
