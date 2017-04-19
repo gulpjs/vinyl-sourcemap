@@ -263,56 +263,6 @@ describe('write', function() {
 		});
 	});
 
-	it('should set the sourceRoot by option sourceRoot', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, { sourceRoot: '/testSourceRoot' }, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe('/testSourceRoot');
-			done(err);
-		});
-	});
-
-	it.skip('should set the sourceRoot by option sourceRoot, as a function', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, {
-			sourceRoot: function() {
-				return '/testSourceRoot';
-			}
-		}, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe('/testSourceRoot');
-			done(err);
-		});
-	});
-
-	it('should interpret relative path in sourceRoot as relative to destination', function(done) {
-		var file = makeNestedFile();
-		sourcemaps.write(file, { path: '.', sourceRoot: '../src' }, function(err, updatedFile, sourceMapFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../src');
-			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
-			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
-			done(err);
-		});
-	});
-
-	it('should interpret relative path in sourceRoot as relative to destination (part 2)', function(done) {
-		var file = makeNestedFile();
-		sourcemaps.write(file, { path: '.', sourceRoot: '' }, function(err, updatedFile, sourceMapFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe('../..');
-			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
-			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
-			done(err);
-		});
-	});
-
-	it('should interpret relative path in sourceRoot as relative to destination (part 3)', function(done) {
-		var file = makeNestedFile();
-		sourcemaps.write(file, { path: 'maps', sourceRoot: '../src' }, function(err, updatedFile, sourceMapFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../../src');
-			expect(updatedFile.sourceMap.file).toBe('../../../dir1/dir2/helloworld.js');
-			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/maps/dir1/dir2/helloworld.js.map'));
-			done(err);
-		});
-	});
-
 	it.skip('should output an error message if debug option is set and sourceContent is missing', function(done) {
 		var file = makeFile();
 		file.sourceMap.sources[0] += '.invalid';
@@ -321,34 +271,6 @@ describe('write', function() {
 		sourcemaps.write(file, { debug: true }, function(err) {
 			expect(hConsole.history.log[0]).toBe('vinyl-sourcemap-write: No source content for "helloworld.js.invalid". Loading from file.');
 			expect(hConsole.history.warn[0].indexOf('vinyl-sourcemap-write: source file not found: ') === 0).toExist();
-			done(err);
-		});
-	});
-
-	it('null as sourceRoot, should not set the sourceRoot', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, { sourceRoot: null }, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe(undefined);
-			done(err);
-		});
-	});
-
-	it.skip('should write function returning null as sourceRoot not set the sourceRoot', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, {
-			sourceRoot: function() {
-				return null;
-			}
-		}, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe(undefined);
-			done(err);
-		});
-	});
-
-	it('empty string as sourceRoot should be kept', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, { sourceRoot: '' }, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe('');
 			done(err);
 		});
 	});
