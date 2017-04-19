@@ -262,12 +262,4 @@ describe('write', function() {
 			done(err);
 		});
 	});
-
-	it('should create shortest path to file in sourceMap#file', function(done) {
-		var file = makeNestedFile();
-		sourcemaps.write(file, 'dir1/maps', function(err, updatedFile) {
-			expect(updatedFile.sourceMap.file).toEqual('../../../dir2/helloworld.js');
-			done(err);
-		});
-	});
 });
