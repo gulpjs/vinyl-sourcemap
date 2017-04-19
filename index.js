@@ -41,11 +41,7 @@ function add(file, options, callback) {
 		preExistingComment: null
 	};
 
-	if (options.loadMaps) {
-		helpers.loadInlineMaps(file, state);
-	}
-
-	helpers.addSourceMaps(file, state, options, callback);
+	helpers.addSourceMaps(file, state, callback);
 }
 
 function write(file, options, callback) {
