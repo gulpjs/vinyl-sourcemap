@@ -61,12 +61,6 @@ function write(file, destPath, callback) {
 	// An end-user can use @gulp-sourcemaps/map-file if they need normalization
 	sourceMap.file = normalizePath(file.relative);
 
-	// TODO: should we be normalizing at all?
-	// An end-user can use @gulp-sourcemaps/map-sources if they need normalization
-	sourceMap.sources = sourceMap.sources.map(function(filePath) {
-		return normalizePath(filePath);
-	});
-
 	// TODO: support null-ish with ==
 	if (sourceMap.sourceRoot === null) {
 		sourceMap.sourceRoot = undefined;
