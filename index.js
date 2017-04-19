@@ -78,7 +78,6 @@ function write(file, options, callback) {
 	// Set defaults for options if unset
 	var opts = defaults({}, options, {
 		includeContent: true,
-		addComment: true,
 	});
 
 	var sourceMap = file.sourceMap;
