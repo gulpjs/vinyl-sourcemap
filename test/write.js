@@ -351,34 +351,6 @@ describe('write', function() {
 		});
 	});
 
-	it('should accept a sourceMappingURLPrefix', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, {
-			path: '../maps',
-			sourceMappingURLPrefix: 'https://asset-host.example.com'
-		}, function(err, updatedFile) {
-			if (/helloworld\.js$/.test(updatedFile.path)) {
-				expect(/sourceMappingURL.*\n$/.exec(String(updatedFile.contents))[0]).toEqual('sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
-				done(err);
-			}
-		});
-	});
-
-	it.skip('should accept a sourceMappingURLPrefix, as a function', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, {
-			path: '../maps',
-			sourceMappingURLPrefix: function() {
-				return 'https://asset-host.example.com';
-			}
-		}, function(err, updatedFile) {
-			if (/helloworld\.js$/.test(updatedFile.path)) {
-				expect(/sourceMappingURL.*\n$/.exec(String(updatedFile.contents))[0]).toEqual('sourceMappingURL=https://asset-host.example.com/maps/helloworld.js.map\n');
-				done(err);
-			}
-		});
-	});
-
 	it.skip('should output an error message if debug option is set and sourceContent is missing', function(done) {
 		var file = makeFile();
 		file.sourceMap.sources[0] += '.invalid';
