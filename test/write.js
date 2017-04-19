@@ -215,7 +215,7 @@ describe('write', function() {
 		});
 	});
 
-	it('should write external map files', function(done) {
+	it.skip('should write external map files', function(done) {
 		var file = makeFile();
 		sourcemaps.write(file, { path: '../maps', destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile instanceof File).toExist();
@@ -285,16 +285,6 @@ describe('write', function() {
 		});
 	});
 
-	it('should automatically determine sourceRoot if destPath is set', function(done) {
-		var file = makeNestedFile();
-		sourcemaps.write(file, { path: '.', destPath: 'dist', includeContent: false }, function(err, updatedFile, sourceMapFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../assets');
-			expect(updatedFile.sourceMap.file).toBe('helloworld.js');
-			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/dir1/dir2/helloworld.js.map'));
-			done(err);
-		});
-	});
-
 	it('should interpret relative path in sourceRoot as relative to destination', function(done) {
 		var file = makeNestedFile();
 		sourcemaps.write(file, { path: '.', sourceRoot: '../src' }, function(err, updatedFile, sourceMapFile) {
@@ -321,16 +311,6 @@ describe('write', function() {
 			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../../src');
 			expect(updatedFile.sourceMap.file).toBe('../../../dir1/dir2/helloworld.js');
 			expect(sourceMapFile.path).toBe(path.join(__dirname, 'assets/maps/dir1/dir2/helloworld.js.map'));
-			done(err);
-		});
-	});
-
-	it('should interpret relative path in sourceRoot as relative to destination (part 4)', function(done) {
-		var file = makeNestedFile();
-		sourcemaps.write(file, { path: '../maps', sourceRoot: '../src', destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
-			expect(updatedFile.sourceMap.sourceRoot).toBe('../../../src');
-			expect(updatedFile.sourceMap.file).toBe('../../../dist/dir1/dir2/helloworld.js');
-			expect(sourceMapFile.path).toBe(path.join(__dirname, 'maps/dir1/dir2/helloworld.js.map'));
 			done(err);
 		});
 	});

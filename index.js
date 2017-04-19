@@ -106,7 +106,7 @@ function write(file, options, callback) {
 		sourceMapFile: null,
 	};
 
-	helpers.writeSourceMaps(file, state, opts, callback);
+	helpers.writeSourceMaps(file, state, callback);
 }
 
 module.exports = {
