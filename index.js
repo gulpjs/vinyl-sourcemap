@@ -55,11 +55,6 @@ function write(file, destPath, callback) {
 
 	var sourceMap = file.sourceMap;
 
-	// TODO: support null-ish with ==
-	if (sourceMap.sourceRoot === null) {
-		sourceMap.sourceRoot = undefined;
-	}
-
 	var state = {
 		destPath: destPath,
 		sourceMap: sourceMap,
