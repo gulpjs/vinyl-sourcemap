@@ -91,10 +91,6 @@ function write(file, options, callback) {
 		return normalizePath(filePath);
 	});
 
-	// A function option here would have already been resolved higher up
-	// TODO: need a test for this being unset by not being defined
-	sourceMap.sourceRoot = options.sourceRoot;
-
 	// TODO: support null-ish with ==
 	if (sourceMap.sourceRoot === null) {
 		sourceMap.sourceRoot = undefined;
