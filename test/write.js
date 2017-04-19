@@ -181,7 +181,7 @@ describe('write', function() {
 			// TODO: Vinyl.isVinyl
 			expect(updatedFile instanceof File).toExist();
 			expect(updatedFile).toEqual(file);
-			expect(String(updatedFile.contents)).toBe( sourceContent + '\n//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\n');
+			expect(String(updatedFile.contents)).toBe( sourceContent + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\n');
 			done(err);
 		});
 	});
@@ -190,7 +190,7 @@ describe('write', function() {
 		var file = makeFile();
 		file.path = file.path.replace('.js', '.css');
 		sourcemaps.write(file, function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toBe(sourceContent + '\n/*# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + ' */\n');
+			expect(String(updatedFile.contents)).toBe(sourceContent + '/*# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + ' */\n');
 			done(err);
 		});
 	});
@@ -208,7 +208,7 @@ describe('write', function() {
 		var file = makeFile();
 		file.contents = new Buffer(file.contents.toString().replace(/\n/g, '\r\n'));
 		sourcemaps.write(file, function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toBe(sourceContent.replace(/\n/g, '\r\n') + '\r\n//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\r\n');
+			expect(String(updatedFile.contents)).toBe(sourceContent.replace(/\n/g, '\r\n') + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\r\n');
 			done(err);
 		});
 	});
@@ -218,7 +218,7 @@ describe('write', function() {
 		sourcemaps.write(file, { path: '../maps', destPath: 'dist' }, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile instanceof File).toExist();
 			expect(updatedFile).toEqual(file);
-			expect(String(updatedFile.contents)).toBe(sourceContent + '\n//# sourceMappingURL=../maps/helloworld.js.map\n');
+			expect(String(updatedFile.contents)).toBe(sourceContent + '//# sourceMappingURL=../maps/helloworld.js.map\n');
 			expect(updatedFile.sourceMap.file).toBe('../dist/helloworld.js');
 			expect(sourceMapFile instanceof File).toExist();
 			expect(sourceMapFile.path).toBe(path.join(__dirname, 'maps/helloworld.js.map'));
@@ -237,7 +237,7 @@ describe('write', function() {
 	it('should create shortest path to map in file comment', function(done) {
 		var file = makeNestedFile();
 		sourcemaps.write(file, { path: 'dir1/maps' }, function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toBe(sourceContent + '\n//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
+			expect(String(updatedFile.contents)).toBe(sourceContent + '//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
 			done(err);
 		});
 	});
@@ -426,7 +426,7 @@ describe('write', function() {
 			}
 		}, function(err, updatedFile) {
 			if (/helloworld\.js$/.test(updatedFile.path)) {
-				expect(String(updatedFile.contents)).toBe(sourceContent + '\n//# sourceMappingURL=http://maps.example.com/dir1/dir2/helloworld.js.map\n');
+				expect(String(updatedFile.contents)).toBe(sourceContent + '//# sourceMappingURL=http://maps.example.com/dir1/dir2/helloworld.js.map\n');
 				done(err);
 			}
 		});
