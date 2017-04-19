@@ -244,14 +244,6 @@ describe('write', function() {
 		});
 	});
 
-	it('should not include source content with option includeContent=false', function(done) {
-		var file = makeFile();
-		sourcemaps.write(file, { includeContent: false }, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sourcesContent).toBe(undefined);
-			done(err);
-		});
-	});
-
 	it('should fetch missing sourceContent', function(done) {
 		var file = makeFile();
 		delete file.sourceMap.sourcesContent;
