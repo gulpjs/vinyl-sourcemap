@@ -2,6 +2,7 @@
 
 var File = require('vinyl');
 var defaults = require('object.defaults');
+var normalizePath = require('normalize-path');
 
 var helpers = require('./lib/helpers');
 
@@ -85,12 +86,12 @@ function write(file, options, callback) {
 	// fix paths if Windows style paths
 	// TODO: should we be normalizing at all?
 	// An end-user can use @gulp-sourcemaps/map-file if they need normalization
-	sourceMap.file = helpers.unixStylePath(file.relative);
+	sourceMap.file = normalizePath(file.relative);
 
 	// TODO: should we be normalizing at all?
 	// An end-user can use @gulp-sourcemaps/map-sources if they need normalization
 	sourceMap.sources = sourceMap.sources.map(function(filePath) {
-		return helpers.unixStylePath(filePath);
+		return normalizePath(filePath);
 	});
 
 	// A function option here would have already been resolved higher up
