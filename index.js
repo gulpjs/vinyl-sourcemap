@@ -13,8 +13,13 @@ function add(file, callback) {
 		return callback(new Error(PLUGIN_NAME + '-add: Not a vinyl file'));
 	}
 
-	// Bail early successfully if file already has sourcemap
-	if (file.sourceMap) {
+	// Bail early with an error if file has streaming contents
+	if (file.isStream()) {
+		return callback(new Error(PLUGIN_NAME + '-add: Streaming not supported'));
+	}
+
+	// Bail early successfully if file is null or already has a sourcemap
+	if (file.isNull() || file.sourceMap) {
 		return callback(null, file);
 	}
 
