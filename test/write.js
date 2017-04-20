@@ -45,7 +45,7 @@ function makeNestedFile() {
 }
 
 function base64JSON(object) {
-	return 'data:application/json;charset=utf8;base64,' + new Buffer(JSON.stringify(object)).toString('base64');
+	return 'data:application/json;charset=utf-8;base64,' + new Buffer(JSON.stringify(object)).toString('base64');
 }
 
 describe('write', function() {
@@ -197,11 +197,11 @@ describe('write', function() {
 		});
 	});
 
-	it('should write no comment if not JS or CSS file', function(done) {
+	it('should write \/\/# comment if any non-.css extension', function(done) {
 		var file = makeFile();
 		file.path = file.path.replace('.js', '.txt');
 		sourcemaps.write(file, function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toBe(sourceContent);
+			expect(String(updatedFile.contents)).toEqual(sourceContent + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\n');
 			done(err);
 		});
 	});
