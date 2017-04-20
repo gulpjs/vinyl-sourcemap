@@ -241,25 +241,4 @@ describe('write', function() {
 			done(err);
 		});
 	});
-
-	it('should fetch missing sourceContent', function(done) {
-		var file = makeFile();
-		delete file.sourceMap.sourcesContent;
-		sourcemaps.write(file, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sourcesContent).toNotBe(undefined);
-			expect(updatedFile.sourceMap.sourcesContent).toEqual([sourceContent]);
-			done(err);
-		});
-	});
-
-	it('should not throw when unable to fetch missing sourceContent', function(done) {
-		var file = makeFile();
-		file.sourceMap.sources[0] += '.invalid';
-		delete file.sourceMap.sourcesContent;
-		sourcemaps.write(file, function(err, updatedFile) {
-			expect(updatedFile.sourceMap.sourcesContent).toNotBe(undefined);
-			expect(updatedFile.sourceMap.sourcesContent).toEqual([]);
-			done(err);
-		});
-	});
 });
