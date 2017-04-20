@@ -42,26 +42,16 @@ function write(file, destPath, callback) {
 	}
 
 	// Bail early with an error if file has streaming contents
-	// TODO: needs test
 	if (file.isStream()) {
 		return callback(new Error(PLUGIN_NAME + '-write: Streaming not supported'));
 	}
 
 	// Bail early successfully if file is null or doesn't have sourcemap
-	// TODO: needs test (at least for null contents?)
 	if (file.isNull() || !file.sourceMap) {
 		return callback(null, file);
 	}
 
-	var sourceMap = file.sourceMap;
-
-	var state = {
-		destPath: destPath,
-		sourceMap: sourceMap,
-		sourceMapFile: null,
-	};
-
-	helpers.writeSourceMaps(file, state, callback);
+	helpers.writeSourceMaps(file, destPath, callback);
 }
 
 module.exports = {

@@ -4,8 +4,11 @@ var fs = require('fs');
 var path = require('path');
 var File = require('vinyl');
 var expect = require('expect');
+var miss = require('mississippi');
+
 var sourcemaps = require('..');
-var stream = require('stream');
+
+var from = miss.from;
 
 var sourceContent = fs.readFileSync(path.join(__dirname, 'assets/helloworld.js')).toString();
 
@@ -48,117 +51,73 @@ function base64JSON(object) {
 
 describe('write', function() {
 
-	describe('ensures file argument', function() {
-
-		it('is not undefined', function(done) {
-			sourcemaps.write(undefined, function(err) {
-				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
-				done();
-			});
-		});
-
-		it('is not null', function(done) {
-			sourcemaps.write(null, function(err) {
-				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
-				done();
-			});
-		});
-
-		it('is not a plain object', function(done) {
-			sourcemaps.write({}, function(err) {
-				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
-				done();
-			});
-		});
-
-		// TODO: seems like a bad test
-		it('is not a stream', function(done) {
-			sourcemaps.write(new stream.Readable(), function(err) {
-				expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
-				done();
-			});
-		});
-
-		it('is a vinyl object', function(done) {
-			var file = makeFile();
-			sourcemaps.write(file, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
+	it('errors if file argument is undefined', function(done) {
+		sourcemaps.write(undefined, function(err) {
+			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
+			done();
 		});
 	});
 
-	describe.skip('ensures destPath argument', function() {
-
-		it('is not mutated', function(done) {
-			var defaultedOpts = {
-				includeContent: true,
-				addComment: true,
-			};
-
-			var opts = {};
-
-			var file = makeFile();
-			sourcemaps.write(file, opts, function(err) {
-				expect(opts).toNotEqual(defaultedOpts);
-				done(err);
-			});
+	it('errors if file argument is null', function(done) {
+		sourcemaps.write(null, function(err) {
+			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
+			done();
 		});
+	});
 
-		it('is defaulted if undefined', function(done) {
-			var file = makeFile();
-			sourcemaps.write(file, undefined, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
+	it('errors if file argument is a plain object', function(done) {
+		sourcemaps.write({}, function(err) {
+			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Not a vinyl file').toExist();
+			done();
 		});
+	});
 
-		it('is defaulted if null', function(done) {
-			var file = makeFile();
-			sourcemaps.write(file, null, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
+	it('does not error if file argument is a Vinyl object with Buffer contents', function(done) {
+		var file = makeFile();
+		sourcemaps.write(file, function(err) {
+			expect(err).toNotExist();
+			done();
 		});
+	});
 
-		it('is defaulted if empty string', function(done) {
-			var file = makeFile();
-			sourcemaps.write(file, '', function(err) {
-				expect(err).toNotExist();
-				done();
-			});
+	it('errors if file argument is a Vinyl object with Stream contents', function(done) {
+		var file = makeFile();
+		file.contents = from([]);
+		sourcemaps.write(file, function(err) {
+			expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Streaming not supported').toExist();
+			done();
 		});
+	});
 
-		it('is defaulted if non-empty string', function(done) {
-			var file = makeFile();
-			sourcemaps.write(file, 'invalid', function(err) {
-				expect(err).toNotExist();
-				done();
-			});
+	it('accepts null destPath argument', function(done) {
+		var file = makeFile();
+		sourcemaps.write(file, null, function(err) {
+			expect(err).toNotExist();
+			done(err);
 		});
+	});
 
-		it('is defaulted if boolean false', function(done) {
-			var file = makeFile();
-			sourcemaps.write(file, false, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
+	it('accepts undefined destPath argument', function(done) {
+		var file = makeFile();
+		sourcemaps.write(file, undefined, function(err) {
+			expect(err).toNotExist();
+			done(err);
 		});
+	});
 
-		it('is defaulted if boolean true', function(done) {
-			var file = makeFile();
-			sourcemaps.write(file, true, function(err) {
-				expect(err).toNotExist();
-				done();
-			});
+	it('accepts string destPath argument', function(done) {
+		var file = makeFile();
+		sourcemaps.write(file, 'something', function(err) {
+			expect(err).toNotExist();
+			done(err);
 		});
+	});
 
-		it('is defaulted if array', function(done) {
-			var file = makeFile();
-			sourcemaps.write(file, [], function(err) {
-				expect(err).toNotExist();
-				done();
-			});
+	it('juggles callback if no destPath argument', function(done) {
+		var file = makeFile();
+		sourcemaps.write(file, function(err) {
+			expect(err).toNotExist();
+			done(err);
 		});
 	});
 
@@ -173,71 +132,105 @@ describe('write', function() {
 		});
 	});
 
-	it('should write an inline source map', function(done) {
+	it('calls back with the untouched file if file contents are null', function(done) {
+		var file = makeFile();
+		file.contents = null;
+		sourcemaps.write(file, function(err, outFile) {
+			expect(err).toNotExist();
+			expect(file).toExist();
+			expect(outFile).toEqual(file);
+			done(err);
+		});
+	});
+
+	it('writes an inline sourcemap when no destPath', function(done) {
 		var file = makeFile();
 		sourcemaps.write(file, function(err, updatedFile, sourceMapFile) {
 			expect(updatedFile).toExist();
 			expect(sourceMapFile).toNotExist();
-			// TODO: Vinyl.isVinyl
-			expect(updatedFile instanceof File).toExist();
+			expect(File.isVinyl(updatedFile)).toEqual(true);
 			expect(updatedFile).toEqual(file);
-			expect(String(updatedFile.contents)).toBe( sourceContent + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\n');
+			expect(updatedFile.contents).toEqual(sourceContent + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\n');
 			done(err);
 		});
 	});
 
-	it('should use CSS comments if CSS file', function(done) {
+	it('writes /*# */ comment if .css extension', function(done) {
 		var file = makeFile();
 		file.path = file.path.replace('.js', '.css');
 		sourcemaps.write(file, function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toBe(sourceContent + '/*# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + ' */\n');
+			expect(updatedFile.contents).toEqual(sourceContent + '/*# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + ' */\n');
 			done(err);
 		});
 	});
 
-	it('should write \/\/# comment if any non-.css extension', function(done) {
+	it('write \/\/# comment if any non-.css extension', function(done) {
 		var file = makeFile();
 		file.path = file.path.replace('.js', '.txt');
 		sourcemaps.write(file, function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toEqual(sourceContent + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\n');
+			expect(updatedFile.contents).toEqual(sourceContent + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\n');
 			done(err);
 		});
 	});
 
-	it('should detect detect whether a file uses \\n or \\r\\n and follow the existing style', function(done) {
+	it('uses \\n or \\r\\n depending on the existing style', function(done) {
 		var file = makeFile();
-		file.contents = new Buffer(file.contents.toString().replace(/\n/g, '\r\n'));
+		var customContents = sourceContent.replace(/\n/g, '\r\n');
+		file.contents = new Buffer(customContents);
 		sourcemaps.write(file, function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toBe(sourceContent.replace(/\n/g, '\r\n') + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\r\n');
+			expect(updatedFile.contents).toEqual(customContents + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\r\n');
 			done(err);
 		});
 	});
 
-	it.skip('should write external map files', function(done) {
+	it('writes an external sourcemap when given a destPath', function(done) {
 		var file = makeFile();
 		sourcemaps.write(file, '../maps', function(err, updatedFile, sourceMapFile) {
-			expect(updatedFile instanceof File).toExist();
+			expect(File.isVinyl(updatedFile)).toEqual(true);
 			expect(updatedFile).toEqual(file);
-			expect(String(updatedFile.contents)).toBe(sourceContent + '//# sourceMappingURL=../maps/helloworld.js.map\n');
-			expect(updatedFile.sourceMap.file).toBe('../dist/helloworld.js');
-			expect(sourceMapFile instanceof File).toExist();
-			expect(sourceMapFile.path).toBe(path.join(__dirname, 'maps/helloworld.js.map'));
+			expect(updatedFile.contents).toEqual(sourceContent + '//# sourceMappingURL=../maps/helloworld.js.map\n');
+
+			expect(File.isVinyl(sourceMapFile)).toEqual(true);
+			expect(sourceMapFile.path).toEqual(path.join(__dirname, 'maps/helloworld.js.map'));
 			expect(JSON.parse(sourceMapFile.contents)).toEqual(updatedFile.sourceMap);
-			expect(sourceMapFile.stat.isFile()).toExist();
-			expect(sourceMapFile.stat.isDirectory()).toNotExist();
-			expect(sourceMapFile.stat.isBlockDevice()).toNotExist();
-			expect(sourceMapFile.stat.isCharacterDevice()).toNotExist();
-			expect(sourceMapFile.stat.isSymbolicLink()).toNotExist();
-			expect(sourceMapFile.stat.isFIFO()).toNotExist();
-			expect(sourceMapFile.stat.isSocket()).toNotExist();
+			expect(sourceMapFile.stat.isFile()).toEqual(true);
+			expect(sourceMapFile.stat.isDirectory()).toEqual(false);
+			expect(sourceMapFile.stat.isBlockDevice()).toEqual(false);
+			expect(sourceMapFile.stat.isCharacterDevice()).toEqual(false);
+			expect(sourceMapFile.stat.isSymbolicLink()).toEqual(false);
+			expect(sourceMapFile.stat.isFIFO()).toEqual(false);
+			expect(sourceMapFile.stat.isSocket()).toEqual(false);
+
 			done(err);
 		});
 	});
 
-	it('should create shortest path to map in file comment', function(done) {
+	it('create shortest path to map in file comment', function(done) {
 		var file = makeNestedFile();
 		sourcemaps.write(file, 'dir1/maps', function(err, updatedFile) {
-			expect(String(updatedFile.contents)).toBe(sourceContent + '//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
+			expect(updatedFile.contents).toEqual(sourceContent + '//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n');
+			done(err);
+		});
+	});
+
+	// TODO: need to figure out this test
+	it.skip('normalizes Windows paths to unix style', function(done) {
+		var file = makeNestedFile();
+		file.path = file.path.replace(/\//g, '\\\\');
+		console.log(file.path);
+		sourcemaps.write(file, '..\\\\maps', function(err, updatedFile) {
+			expect(updatedFile.contents).toEqual(sourceContent + '//# sourceMappingURL=../maps/helloworld.js.map\n');
+			done(err);
+		});
+	});
+
+	// TODO: need to figure out this test
+	it.skip('does not normalize remote paths', function(done) {
+		var file = makeNestedFile();
+		file.path = file.path.replace(/\//g, '\\\\');
+		console.log(file.path);
+		sourcemaps.write(file, '..\\\\maps', function(err, updatedFile) {
+			expect(updatedFile.contents).toEqual(sourceContent + '//# sourceMappingURL=../maps/helloworld.js.map\n');
 			done(err);
 		});
 	});
