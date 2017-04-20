@@ -5,8 +5,11 @@ var File = require('vinyl');
 var path = require('path');
 var expect = require('expect');
 var convert = require('convert-source-map');
+var miss = require('mississippi');
 
 var sourcemaps = require('..');
+
+var from = miss.from;
 
 var sourceContent = fs.readFileSync(path.join(__dirname, 'assets/helloworld.js'));
 
@@ -64,11 +67,51 @@ describe('add', function() {
 		});
 	});
 
-	it('does not error if file argument is a vinyl object', function(done) {
+	it('does not error if file argument is a Vinyl object with Buffer contents', function(done) {
 		var file = makeFile();
 		sourcemaps.add(file, function(err) {
 			expect(err).toNotExist();
 			done();
+		});
+	});
+
+	it('errors if file argument is a Vinyl object with Stream contents', function(done) {
+		var file = makeFile();
+		file.contents = from([]);
+		sourcemaps.add(file, function(err) {
+			expect(err instanceof Error && err.message === 'vinyl-sourcemap-add: Streaming not supported').toExist();
+			done();
+		});
+	});
+
+	it('calls back with the untouched file if file already has a sourcemap', function(done) {
+		var sourceMap = {
+			version: 3,
+			names: [],
+			mappings: '',
+			sources: ['test.js'],
+			sourcesContent: ['testContent'],
+		};
+
+		var file = makeFile();
+		file.sourceMap = sourceMap;
+		sourcemaps.add(file, function(err, data) {
+			expect(data).toExist();
+			expect(File.isVinyl(data)).toEqual(true);
+			expect(data.sourceMap).toBe(sourceMap);
+			expect(data).toBe(file);
+			done(err);
+		});
+	});
+
+	it('calls back with the untouched file if file contents are null', function(done) {
+		var file = makeFile();
+		file.contents = null;
+		sourcemaps.add(file, function(err, outFile) {
+			expect(err).toNotExist();
+			expect(file).toExist();
+			expect(outFile).toEqual(file);
+			done(err);
 		});
 	});
 
@@ -298,26 +341,6 @@ describe('add', function() {
 			expect(data.sourceMap).toExist();
 			expect(data.sourceMap.sourceRoot).toEqual('http://example.com/');
 			expect(data.sourceMap.sourcesContent).toEqual([null, null]);
-			done(err);
-		});
-	});
-
-	it('passes file through when it already has a sourcemap', function(done) {
-		var sourceMap = {
-			version: 3,
-			names: [],
-			mappings: '',
-			sources: ['test.js'],
-			sourcesContent: ['testContent'],
-		};
-
-		var file = makeFile();
-		file.sourceMap = sourceMap;
-		sourcemaps.add(file, function(err, data) {
-			expect(data).toExist();
-			expect(File.isVinyl(data)).toEqual(true);
-			expect(data.sourceMap).toBe(sourceMap);
-			expect(data).toBe(file);
 			done(err);
 		});
 	});
