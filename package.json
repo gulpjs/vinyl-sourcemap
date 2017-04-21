@@ -19,7 +19,7 @@
     "lib/"
   ],
   "scripts": {
-    "lint": "eslint index.js lib/ test/add.js test/write.js && jscs index.js test/add.js test/write.js",
+    "lint": "eslint index.js lib/ test/add.js test/write.js && jscs index.js lib/ test/add.js test/write.js",
     "pretest": "npm run lint",
     "test": "mocha --async-only",
     "cover": "istanbul cover _mocha --report lcovonly",
