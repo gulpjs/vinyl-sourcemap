@@ -19,7 +19,7 @@ function makeSourceMap() {
     names: [],
     mappings: '',
     sources: ['helloworld.js'],
-    sourcesContent: [sourceContent]
+    sourcesContent: [sourceContent],
   };
 }
 
@@ -39,7 +39,7 @@ function makeNestedFile() {
     cwd: __dirname,
     base: path.join(__dirname, 'assets'),
     path: path.join(__dirname, 'assets', 'dir1', 'dir2', 'helloworld.js'),
-    contents: new Buffer(sourceContent)
+    contents: new Buffer(sourceContent),
   });
   file.sourceMap = makeSourceMap();
   return file;

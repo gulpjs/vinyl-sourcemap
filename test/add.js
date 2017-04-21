@@ -18,7 +18,7 @@ function makeFile() {
     cwd: __dirname,
     base: path.join(__dirname, 'assets'),
     path: path.join(__dirname, 'assets', 'helloworld.js'),
-    contents: new Buffer(sourceContent)
+    contents: new Buffer(sourceContent),
   });
 }
 
@@ -30,7 +30,7 @@ function makeSourcemap() {
     sourceRoot: path.join(__dirname, 'assets'),
     sources: ['test1.js', 'test2.js'],
     sourcesContent: ['console.log("line 1.1");\nconsole.log("line 1.2");\n', 'console.log("line 2.1");\nconsole.log("line 2.2");'],
-    version: 3
+    version: 3,
   };
 }
 
@@ -40,7 +40,7 @@ function makeFileWithInlineSourceMap() {
     cwd: __dirname,
     base: path.join(__dirname, 'assets'),
     path: path.join(__dirname, 'assets', 'all.js'),
-    contents: new Buffer('console.log("line 1.1"),console.log("line 1.2"),console.log("line 2.1"),console.log("line 2.2");\n' + inline)
+    contents: new Buffer('console.log("line 1.1"),console.log("line 1.2"),console.log("line 2.1"),console.log("line 2.2");\n' + inline),
   });
 }
 
@@ -233,7 +233,7 @@ describe('add', function() {
     });
   });
 
-  it('loads external sourcemap by filename if no source mapping comment', function (done) {
+  it('loads external sourcemap by filename if no source mapping comment', function(done) {
     var file = makeFile();
     file.path = file.path.replace('helloworld.js', 'helloworld2.js');
     sourcemaps.add(file, function(err, data) {
