@@ -24,10 +24,11 @@ function add(file, callback) {
   }
 
   var state = {
-    path: '', //root path for the sources in the map
+    path: '', // Root path for the sources in the map
     map: null,
     content: file.contents.toString(),
-    preExistingComment: null
+    // TODO: handle this?
+    preExistingComment: null,
   };
 
   helpers.addSourceMaps(file, state, callback);
