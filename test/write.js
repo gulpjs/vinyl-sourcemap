@@ -225,12 +225,10 @@ describe('write', function() {
   });
 
   // TODO: need to figure out this test
-  it.skip('does not normalize remote paths', function(done) {
+  it.skip('properly handles remote paths', function(done) {
     var file = makeNestedFile();
-    file.path = file.path.replace(/\//g, '\\\\');
-    console.log(file.path);
-    sourcemaps.write(file, '..\\\\maps', function(err, updatedFile) {
-      expect(updatedFile.contents).toEqual(sourceContent + '//# sourceMappingURL=../maps/helloworld.js.map\n');
+    sourcemaps.write(file, 'http://example.com', function(err, updatedFile) {
+      expect(updatedFile.contents).toEqual(sourceContent + '//# sourceMappingURL=http://example.com/dir1/dir2/helloworld.js.map\n');
       done(err);
     });
   });
