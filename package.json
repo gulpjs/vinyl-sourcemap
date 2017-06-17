@@ -30,7 +30,6 @@
     "file-normalize": "^1.1.0",
     "graceful-fs": "^4.1.6",
     "now-and-later": "^2.0.0",
-    "object.defaults": "^1.0.0",
     "vinyl": "^2.0.0"
   },
   "devDependencies": {
