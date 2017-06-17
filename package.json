@@ -26,10 +26,10 @@
     "coveralls": "npm run cover && istanbul-coveralls"
   },
   "dependencies": {
-    "async": "^2.1.4",
     "convert-source-map": "^1.5.0",
     "file-normalize": "^1.1.0",
     "graceful-fs": "^4.1.6",
+    "now-and-later": "^2.0.0",
     "object.defaults": "^1.0.0",
     "vinyl": "^2.0.0"
   },
