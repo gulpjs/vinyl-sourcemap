@@ -26,10 +26,12 @@
     "coveralls": "npm run cover && istanbul-coveralls"
   },
   "dependencies": {
+    "append-buffer": "^1.0.2",
     "convert-source-map": "^1.5.0",
-    "file-normalize": "^1.1.0",
     "graceful-fs": "^4.1.6",
+    "normalize-path": "^2.1.1",
     "now-and-later": "^2.0.0",
+    "remove-bom-buffer": "^3.0.0",
     "vinyl": "^2.0.0"
   },
   "devDependencies": {
