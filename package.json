@@ -28,9 +28,9 @@
     "convert-source-map": "^1.8.0",
     "graceful-fs": "^4.2.10",
     "normalize-path": "^3.0.0",
-    "now-and-later": "^2.0.1",
+    "now-and-later": "^3.0.0",
     "remove-bom-buffer": "^3.0.0",
-    "vinyl": "^2.2.1"
+    "vinyl": "^3.0.0"
   },
   "devDependencies": {
     "eslint": "^7.32.0",
