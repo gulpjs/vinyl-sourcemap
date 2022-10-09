@@ -1,6 +1,7 @@
 'use strict';
 
 var fs = require('fs');
+var os = require('os');
 var path = require('path');
 var File = require('vinyl');
 var expect = require('expect');
@@ -179,6 +180,16 @@ describe('write', function() {
     file.contents = Buffer.from(customContents);
     sourcemaps.write(file, function(err, updatedFile) {
       expect(updatedFile.contents.toString()).toEqual(customContents + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + '\r\n');
+      done(err);
+    });
+  });
+
+  it('uses neithor \\n nor \\r\\n for eol', function(done) {
+    var file = makeFile();
+    var customContents = sourceContent.replace(/\n/g, '\r');
+    file.contents = Buffer.from(customContents);
+    sourcemaps.write(file, function(err, updatedFile) {
+      expect(updatedFile.contents.toString()).toEqual(customContents + '//# sourceMappingURL=' + base64JSON(updatedFile.sourceMap) + os.EOL);
       done(err);
     });
   });
