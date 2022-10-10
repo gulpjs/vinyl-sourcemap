@@ -192,7 +192,7 @@ describe('write', function() {
     });
   });
 
-  it('uses neithor \\n nor \\r\\n for eol', function(done) {
+  it('uses os.EOL if no EOL in contents', function(done) {
     var file = makeFile();
     var customContents = sourceContent.replace(/\n/g, '\r');
     file.contents = Buffer.from(customContents);
