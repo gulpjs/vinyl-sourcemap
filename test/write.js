@@ -5,11 +5,10 @@ var os = require('os');
 var path = require('path');
 var File = require('vinyl');
 var expect = require('expect');
-var miss = require('mississippi');
+var streamx = require('streamx');
+var stream = require('stream');
 
 var sourcemaps = require('..');
-
-var from = miss.from;
 
 var sourceContent = fs.readFileSync(path.join(__dirname, 'assets/helloworld.js')).toString();
 
@@ -81,9 +80,18 @@ describe('write', function() {
     });
   });
 
-  it('errors if file argument is a Vinyl object with Stream contents', function(done) {
+  it('errors if file argument is a Vinyl object with contents from streamx.Readable', function(done) {
     var file = makeFile();
-    file.contents = from([]);
+    file.contents = streamx.Readable.from([]);
+    sourcemaps.write(file, function(err) {
+      expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Streaming not supported').toBeTruthy();
+      done();
+    });
+  });
+
+  it('errors if file argument is a Vinyl object with contents from stream.Readable', function(done) {
+    var file = makeFile();
+    file.contents = stream.Readable.from([]);
     sourcemaps.write(file, function(err) {
       expect(err instanceof Error && err.message === 'vinyl-sourcemap-write: Streaming not supported').toBeTruthy();
       done();
