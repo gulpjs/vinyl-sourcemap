@@ -259,7 +259,7 @@ describe('add', function() {
     file.contents = Buffer.from(sourceContent + '\n//# sourceMappingURL=helloworld3.js.map');
     sourcemaps.add(file, function(err, data) {
       expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), 'test1\n']);
+      expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), 'console.log(\'test1\');\n']);
       done(err);
     });
   });
@@ -323,7 +323,7 @@ describe('add', function() {
     sourcemaps.add(file, function(err, data) {
       expect(data.sourceMap).toBeTruthy();
       expect(data.sourceMap.sourceRoot).toEqual('test');
-      expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), 'test1\n']);
+      expect(data.sourceMap.sourcesContent).toEqual([file.contents.toString(), 'console.log(\'test1\');\n']);
       done(err);
     });
   });
@@ -337,7 +337,7 @@ describe('add', function() {
     sourcemaps.add(file, function(err, data) {
       expect(data.sourceMap).toBeTruthy();
       expect(data.sourceMap.sourceRoot).toEqual(path.join(__dirname, 'assets'));
-      expect(data.sourceMap.sourcesContent).toEqual(['test1\n', 'test2\n']);
+      expect(data.sourceMap.sourcesContent).toEqual(['console.log(\'test1\');\n', 'console.log(\'test2\');\n']);
       done(err);
     });
   });
