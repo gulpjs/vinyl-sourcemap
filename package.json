@@ -27,7 +27,6 @@
     "convert-source-map": "^1.8.0",
     "graceful-fs": "^4.2.10",
     "now-and-later": "^3.0.0",
-    "remove-bom-buffer": "^3.0.0",
     "vinyl": "^3.0.0"
   },
   "devDependencies": {
