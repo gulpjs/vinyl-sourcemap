@@ -31,16 +31,16 @@ function makeSourcemap() {
   };
 }
 
-describe('add', function () {
-  function makeFile() {
-    return new File({
-      cwd: __dirname,
-      base: path.join(__dirname, 'assets'),
-      path: path.join(__dirname, 'assets', 'helloworld.js'),
-      contents: Buffer.from(sourceContent),
-    });
-  }
+function makeFile(contents) {
+  return new File({
+    cwd: __dirname,
+    base: path.join(__dirname, 'assets'),
+    path: path.join(__dirname, 'assets', 'helloworld.js'),
+    contents: contents,
+  });
+}
 
+describe('add', function () {
   it('errors if file argument is undefined', function (done) {
     sourcemaps.add(undefined, function (err) {
       expect(
@@ -72,8 +72,7 @@ describe('add', function () {
   });
 
   it('errors if file argument is a Vinyl object with contents from streamx.Readable', function (done) {
-    var file = makeFile();
-    file.contents = streamx.Readable.from([]);
+    var file = makeFile(streamx.Readable.from([]));
     sourcemaps.add(file, function (err) {
       expect(
         err instanceof Error &&
@@ -84,8 +83,7 @@ describe('add', function () {
   });
 
   it('errors if file argument is a Vinyl object with contents from stream.Readable', function (done) {
-    var file = makeFile();
-    file.contents = stream.Readable.from([]);
+    var file = makeFile(stream.Readable.from([]));
     sourcemaps.add(file, function (err) {
       expect(
         err instanceof Error &&
@@ -94,18 +92,19 @@ describe('add', function () {
       done();
     });
   });
+
+  it('calls back with the untouched file if file contents are null', function (done) {
+    var file = makeFile(null);
+    sourcemaps.add(file, function (err, outFile) {
+      expect(err).toBeFalsy();
+      expect(file).toBeTruthy();
+      expect(outFile).toEqual(file);
+      done(err);
+    });
+  });
 });
 
-describe('add (buffered contents)', function () {
-  function makeFile() {
-    return new File({
-      cwd: __dirname,
-      base: path.join(__dirname, 'assets'),
-      path: path.join(__dirname, 'assets', 'helloworld.js'),
-      contents: Buffer.from(sourceContent),
-    });
-  }
-
+describe('add (buffer contents)', function () {
   function makeFileWithInlineSourceMap() {
     var inline = convert.fromObject(makeSourcemap()).toComment();
     return new File({
@@ -120,7 +119,7 @@ describe('add (buffered contents)', function () {
   }
 
   it('does not error if file argument is a Vinyl object with Buffer contents', function (done) {
-    var file = makeFile();
+    var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.add(file, function (err) {
       expect(err).toBeFalsy();
       done();
@@ -136,50 +135,41 @@ describe('add (buffered contents)', function () {
       sourcesContent: ['testContent'],
     };
 
-    var file = makeFile();
+    var file = makeFile(Buffer.from(sourceContent));
     file.sourceMap = sourceMap;
-    sourcemaps.add(file, function (err, data) {
-      expect(data).toBeTruthy();
-      expect(File.isVinyl(data)).toEqual(true);
-      expect(data.sourceMap).toBe(sourceMap);
-      expect(data).toBe(file);
-      done(err);
-    });
-  });
-
-  it('calls back with the untouched file if file contents are null', function (done) {
-    var file = makeFile();
-    file.contents = null;
     sourcemaps.add(file, function (err, outFile) {
-      expect(err).toBeFalsy();
-      expect(file).toBeTruthy();
-      expect(outFile).toEqual(file);
+      expect(outFile).toBeTruthy();
+      expect(File.isVinyl(outFile)).toEqual(true);
+      expect(outFile.sourceMap).toBe(sourceMap);
+      expect(outFile).toBe(file);
       done(err);
     });
   });
 
   it('adds an empty sourceMap if none are found', function (done) {
-    sourcemaps.add(makeFile(), function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.version).toEqual(3);
-      expect(data.sourceMap.sources[0]).toEqual('helloworld.js');
-      expect(data.sourceMap.sourcesContent[0]).toEqual(sourceContent);
-      expect(data.sourceMap.names).toEqual([]);
-      expect(data.sourceMap.mappings).toEqual('');
+    var file = makeFile(Buffer.from(sourceContent));
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.version).toEqual(3);
+      expect(outFile.sourceMap.sources[0]).toEqual('helloworld.js');
+      expect(outFile.sourceMap.sourcesContent[0]).toEqual(sourceContent);
+      expect(outFile.sourceMap.names).toEqual([]);
+      expect(outFile.sourceMap.mappings).toEqual('');
       done(err);
     });
   });
 
   it('imports an existing inline sourcemap', function (done) {
-    sourcemaps.add(makeFileWithInlineSourceMap(), function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.version).toEqual(3);
-      expect(data.sourceMap.sources).toEqual(['test1.js', 'test2.js']);
-      expect(data.sourceMap.sourcesContent).toEqual([
+    var file = makeFileWithInlineSourceMap();
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.version).toEqual(3);
+      expect(outFile.sourceMap.sources).toEqual(['test1.js', 'test2.js']);
+      expect(outFile.sourceMap.sourcesContent).toEqual([
         'console.log("line 1.1");\nconsole.log("line 1.2");\n',
         'console.log("line 2.1");\nconsole.log("line 2.2");',
       ]);
-      expect(data.sourceMap.mappings).toEqual(
+      expect(outFile.sourceMap.mappings).toEqual(
         'AAAAA,QAAAC,IAAA,YACAD,QAAAC,IAAA,YCDAD,QAAAC,IAAA,YACAD,QAAAC,IAAA'
       );
       done(err);
@@ -187,148 +177,149 @@ describe('add (buffered contents)', function () {
   });
 
   it('removes an imported inline sourcemap', function (done) {
-    sourcemaps.add(makeFileWithInlineSourceMap(), function (err, data) {
-      expect(/sourceMappingURL/.test(data.contents.toString())).toEqual(false);
+    var file = makeFileWithInlineSourceMap();
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.contents.toString()).not.toMatch(/sourceMappingURL/);
       done(err);
     });
   });
 
   it('loads external sourcemap file from //# comment', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//# sourceMappingURL=helloworld2.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//# sourceMappingURL=helloworld2.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.version).toEqual(3);
-      expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
-      expect(data.sourceMap.sourcesContent).toEqual([
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.version).toEqual(3);
+      expect(outFile.sourceMap.sources).toEqual(['helloworld2.js']);
+      expect(outFile.sourceMap.sourcesContent).toEqual([
         'source content from source map',
       ]);
-      expect(data.sourceMap.mappings).toEqual('');
+      expect(outFile.sourceMap.mappings).toEqual('');
       done(err);
     });
   });
 
   it('removes an imported sourcemap file //# comment', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//# sourceMappingURL=helloworld2.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//# sourceMappingURL=helloworld2.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(/sourceMappingURL/.test(data.contents.toString())).toEqual(false);
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.contents.toString()).not.toMatch(/sourceMappingURL/);
       done(err);
     });
   });
 
   it('loads external sourcemap file from //@ comment', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//@ sourceMappingURL=helloworld2.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//@ sourceMappingURL=helloworld2.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.version).toEqual(3);
-      expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
-      expect(data.sourceMap.sourcesContent).toEqual([
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.version).toEqual(3);
+      expect(outFile.sourceMap.sources).toEqual(['helloworld2.js']);
+      expect(outFile.sourceMap.sourcesContent).toEqual([
         'source content from source map',
       ]);
-      expect(data.sourceMap.mappings).toEqual('');
+      expect(outFile.sourceMap.mappings).toEqual('');
       done(err);
     });
   });
 
   it('removes an imported sourcemap file //@ comment', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//@ sourceMappingURL=helloworld2.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//@ sourceMappingURL=helloworld2.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(/sourceMappingURL/.test(data.contents.toString())).toEqual(false);
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.contents.toString()).not.toMatch(/sourceMappingURL/);
       done(err);
     });
   });
 
   it('loads external sourcemap file from /*# */ comment', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n/*# sourceMappingURL=helloworld2.js.map */'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '/*# sourceMappingURL=helloworld2.js.map */')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.version).toEqual(3);
-      expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
-      expect(data.sourceMap.sourcesContent).toEqual([
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.version).toEqual(3);
+      expect(outFile.sourceMap.sources).toEqual(['helloworld2.js']);
+      expect(outFile.sourceMap.sourcesContent).toEqual([
         'source content from source map',
       ]);
-      expect(data.sourceMap.mappings).toEqual('');
+      expect(outFile.sourceMap.mappings).toEqual('');
       done(err);
     });
   });
 
   it('removes an imported sourcemap file /*# */ comment', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n/*# sourceMappingURL=helloworld2.js.map */'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '/*# sourceMappingURL=helloworld2.js.map */')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(/sourceMappingURL/.test(data.contents.toString())).toEqual(false);
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.contents.toString()).not.toMatch(/sourceMappingURL/);
       done(err);
     });
   });
 
   it('loads external sourcemap file from /*@ */ comment', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n/*@ sourceMappingURL=helloworld2.js.map */'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '/*@ sourceMappingURL=helloworld2.js.map */')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.version).toEqual(3);
-      expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
-      expect(data.sourceMap.sourcesContent).toEqual([
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.version).toEqual(3);
+      expect(outFile.sourceMap.sources).toEqual(['helloworld2.js']);
+      expect(outFile.sourceMap.sourcesContent).toEqual([
         'source content from source map',
       ]);
-      expect(data.sourceMap.mappings).toEqual('');
+      expect(outFile.sourceMap.mappings).toEqual('');
       done(err);
     });
   });
 
   it('removes an imported sourcemap file /*@ */ comment', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n/*@ sourceMappingURL=helloworld2.js.map */'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '/*@ sourceMappingURL=helloworld2.js.map */')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(/sourceMappingURL/.test(data.contents.toString())).toEqual(false);
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.contents.toString()).not.toMatch(/sourceMappingURL/);
       done(err);
     });
   });
 
   it('loads external sourcemap by filename if no source mapping comment', function (done) {
-    var file = makeFile();
+    var file = makeFile(Buffer.from(sourceContent));
     file.path = file.path.replace('helloworld.js', 'helloworld2.js');
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.version).toEqual(3);
-      expect(data.sourceMap.sources).toEqual(['helloworld2.js']);
-      expect(data.sourceMap.sourcesContent).toEqual([
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.version).toEqual(3);
+      expect(outFile.sourceMap.sources).toEqual(['helloworld2.js']);
+      expect(outFile.sourceMap.sourcesContent).toEqual([
         'source content from source map',
       ]);
-      expect(data.sourceMap.mappings).toEqual('');
+      expect(outFile.sourceMap.mappings).toEqual('');
       done(err);
     });
   });
 
   it('loads sourcesContent if missing', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//# sourceMappingURL=helloworld3.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//# sourceMappingURL=helloworld3.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.sourcesContent).toEqual([
-        file.contents.toString(),
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.sourcesContent).toEqual([
+        content,
         "console.log('test1');\n",
       ]);
       done(err);
@@ -336,41 +327,41 @@ describe('add (buffered contents)', function () {
   });
 
   it('does not error when source file for sourcesContent not found', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//# sourceMappingURL=helloworld4.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//# sourceMappingURL=helloworld4.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
+    sourcemaps.add(file, function (err, outFile) {
       expect(err).toBeFalsy();
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.sources).toEqual(['helloworld.js', 'missingfile']);
-      expect(data.sourceMap.sourcesContent).toEqual([
-        file.contents.toString(),
-        null,
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.sources).toEqual([
+        'helloworld.js',
+        'missingfile',
       ]);
+      expect(outFile.sourceMap.sourcesContent).toEqual([content, null]);
       done(err);
     });
   });
 
   it('uses unix style paths in sourcemap', function (done) {
-    var file = makeFile();
+    var file = makeFile(Buffer.from(sourceContent));
     file.base = file.cwd;
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.file).toEqual('assets/helloworld.js');
-      expect(data.sourceMap.sources).toEqual(['assets/helloworld.js']);
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.file).toEqual('assets/helloworld.js');
+      expect(outFile.sourceMap.sources).toEqual(['assets/helloworld.js']);
       done(err);
     });
   });
 
   it('normalizes Windows paths in sources to unix paths', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//# sourceMappingURL=helloworld8.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//# sourceMappingURL=helloworld8.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.sources).toEqual([
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.sources).toEqual([
         '../helloworld.js',
         '../test1.js',
       ]);
@@ -379,35 +370,35 @@ describe('add (buffered contents)', function () {
   });
 
   it('sets file.relative as file property in sourcemap', function (done) {
-    var file = makeFile();
+    var file = makeFile(Buffer.from(sourceContent));
     file.stem = 'brandnew';
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.file).toEqual('brandnew.js');
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.file).toEqual('brandnew.js');
       done(err);
     });
   });
 
   it('normalizes Windows paths in file.relative before using in sourcemap', function (done) {
-    var file = makeFile();
+    var file = makeFile(Buffer.from(sourceContent));
     file.stem = 'assets\\\\brandnew';
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.file).toEqual('assets/brandnew.js');
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.file).toEqual('assets/brandnew.js');
       done(err);
     });
   });
 
   it('uses relative sourceRoot to resolve sources', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//# sourceMappingURL=helloworld5.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//# sourceMappingURL=helloworld5.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.sourceRoot).toEqual('test');
-      expect(data.sourceMap.sourcesContent).toEqual([
-        file.contents.toString(),
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.sourceRoot).toEqual('test');
+      expect(outFile.sourceMap.sourcesContent).toEqual([
+        content,
         "console.log('test1');\n",
       ]);
       done(err);
@@ -415,15 +406,17 @@ describe('add (buffered contents)', function () {
   });
 
   it('uses absolute sourceRoot to resolve sources', function (done) {
-    var file = makeFile();
     var map = convert.fromObject(makeSourcemap());
     delete map.sourcemap.sourcesContent;
     var inline = map.toComment();
-    file.contents = Buffer.from(sourceContent + '\n' + inline);
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.sourceRoot).toEqual(path.join(__dirname, 'assets'));
-      expect(data.sourceMap.sourcesContent).toEqual([
+    var content = sourceContent + '\n';
+    var file = makeFile(Buffer.from(content + inline));
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.sourceRoot).toEqual(
+        path.join(__dirname, 'assets')
+      );
+      expect(outFile.sourceMap.sourcesContent).toEqual([
         "console.log('test1');\n",
         "console.log('test2');\n",
       ]);
@@ -432,14 +425,14 @@ describe('add (buffered contents)', function () {
   });
 
   it('does not load sourcesContent when sourceRoot is a url', function (done) {
-    var file = makeFile();
-    file.contents = Buffer.from(
-      sourceContent + '\n//# sourceMappingURL=helloworld6.js.map'
+    var content = sourceContent + '\n';
+    var file = makeFile(
+      Buffer.from(content + '//# sourceMappingURL=helloworld6.js.map')
     );
-    sourcemaps.add(file, function (err, data) {
-      expect(data.sourceMap).toBeTruthy();
-      expect(data.sourceMap.sourceRoot).toEqual('http://example.com/');
-      expect(data.sourceMap.sourcesContent).toEqual([null, null]);
+    sourcemaps.add(file, function (err, outFile) {
+      expect(outFile.sourceMap).toBeTruthy();
+      expect(outFile.sourceMap.sourceRoot).toEqual('http://example.com/');
+      expect(outFile.sourceMap.sourcesContent).toEqual([null, null]);
       done(err);
     });
   });
