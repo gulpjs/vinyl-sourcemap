@@ -15,6 +15,22 @@ var sourceContent = fs.readFileSync(
   'utf-8'
 );
 
+function makeSourcemap() {
+  return {
+    file: 'all.js',
+    mappings:
+      'AAAAA,QAAAC,IAAA,YACAD,QAAAC,IAAA,YCDAD,QAAAC,IAAA,YACAD,QAAAC,IAAA',
+    names: ['console', 'log'],
+    sourceRoot: path.join(__dirname, 'assets'),
+    sources: ['test1.js', 'test2.js'],
+    sourcesContent: [
+      'console.log("line 1.1");\nconsole.log("line 1.2");\n',
+      'console.log("line 2.1");\nconsole.log("line 2.2");',
+    ],
+    version: 3,
+  };
+}
+
 describe('add', function () {
   function makeFile() {
     return new File({
@@ -88,22 +104,6 @@ describe('add (buffered contents)', function () {
       path: path.join(__dirname, 'assets', 'helloworld.js'),
       contents: Buffer.from(sourceContent),
     });
-  }
-
-  function makeSourcemap() {
-    return {
-      file: 'all.js',
-      mappings:
-        'AAAAA,QAAAC,IAAA,YACAD,QAAAC,IAAA,YCDAD,QAAAC,IAAA,YACAD,QAAAC,IAAA',
-      names: ['console', 'log'],
-      sourceRoot: path.join(__dirname, 'assets'),
-      sources: ['test1.js', 'test2.js'],
-      sourcesContent: [
-        'console.log("line 1.1");\nconsole.log("line 1.2");\n',
-        'console.log("line 2.1");\nconsole.log("line 2.2");',
-      ],
-      version: 3,
-    };
   }
 
   function makeFileWithInlineSourceMap() {
