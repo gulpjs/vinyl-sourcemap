@@ -1,12 +1,12 @@
 <p align="center">
-  <a href="http://gulpjs.com">
+  <a href="https://gulpjs.com">
     <img height="257" width="114" src="https://raw.githubusercontent.com/gulpjs/artwork/master/gulp-2x.png">
   </a>
 </p>
 
 # vinyl-sourcemap
 
-[![NPM version][npm-image]][npm-url] [![Downloads][downloads-image]][npm-url] [![Build Status][travis-image]][travis-url] [![AppVeyor Build Status][appveyor-image]][appveyor-url] [![Coveralls Status][coveralls-image]][coveralls-url] [![Gitter chat][gitter-image]][gitter-url]
+[![NPM version][npm-image]][npm-url] [![Downloads][downloads-image]][npm-url] [![Build Status][ci-image]][ci-url] [![Coveralls Status][coveralls-image]][coveralls-url]
 
 Add/write sourcemaps to/from Vinyl files.
 
@@ -60,20 +60,18 @@ If the `file` doesn't have a `.sourceMap` property or the contents are null, the
 
 MIT
 
-[vinyl]: https://github.com/gulpjs/vinyl
-
-[downloads-image]: http://img.shields.io/npm/dm/vinyl-sourcemap.svg
+<!-- prettier-ignore-start -->
+[downloads-image]: https://img.shields.io/npm/dm/vinyl-sourcemap.svg?style=flat-square
 [npm-url]: https://npmjs.com/package/vinyl-sourcemap
-[npm-image]: http://img.shields.io/npm/v/vinyl-sourcemap.svg
+[npm-image]: https://img.shields.io/npm/v/vinyl-sourcemap.svg?style=flat-square
 
-[travis-url]: https://travis-ci.org/gulpjs/vinyl-sourcemap
-[travis-image]: http://img.shields.io/travis/gulpjs/vinyl-sourcemap.svg?label=travis-ci
-
-[appveyor-url]: https://ci.appveyor.com/project/gulpjs/vinyl-sourcemap
-[appveyor-image]: https://img.shields.io/appveyor/ci/gulpjs/vinyl-sourcemap.svg?label=appveyor
+[ci-url]: https://github.com/gulpjs/vinyl-sourcemap/actions?query=workflow:dev
+[ci-image]: https://img.shields.io/github/workflow/status/gulpjs/vinyl-sourcemap/dev?style=flat-square
 
 [coveralls-url]: https://coveralls.io/r/gulpjs/vinyl-sourcemap
-[coveralls-image]: http://img.shields.io/coveralls/gulpjs/vinyl-sourcemap/master.svg
+[coveralls-image]: https://img.shields.io/coveralls/gulpjs/vinyl-sourcemap/master.svg?style=flat-square
+<!-- prettier-ignore-end -->
 
-[gitter-url]: https://gitter.im/gulpjs/gulp
-[gitter-image]: https://badges.gitter.im/gulpjs/gulp.png
+<!-- prettier-ignore-start -->
+[vinyl]: https://github.com/gulpjs/vinyl
+<!-- prettier-ignore-end -->
