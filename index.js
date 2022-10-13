@@ -7,7 +7,6 @@ var helpers = require('./lib/helpers');
 var PLUGIN_NAME = 'vinyl-sourcemap';
 
 function add(file, callback) {
-
   // Bail early an error if the file argument is not a Vinyl file
   if (!File.isVinyl(file)) {
     return callback(new Error(PLUGIN_NAME + '-add: Not a vinyl file'));
@@ -35,7 +34,6 @@ function add(file, callback) {
 }
 
 function write(file, destPath, callback) {
-
   // Check if options or a callback are passed as second argument
   if (typeof destPath === 'function') {
     callback = destPath;
