@@ -15,15 +15,6 @@ var sourceContent = fs.readFileSync(
   'utf-8'
 );
 
-function makeFile() {
-  return new File({
-    cwd: __dirname,
-    base: path.join(__dirname, 'assets'),
-    path: path.join(__dirname, 'assets', 'helloworld.js'),
-    contents: Buffer.from(sourceContent),
-  });
-}
-
 function makeSourcemap() {
   return {
     file: 'all.js',
@@ -40,20 +31,16 @@ function makeSourcemap() {
   };
 }
 
-function makeFileWithInlineSourceMap() {
-  var inline = convert.fromObject(makeSourcemap()).toComment();
-  return new File({
-    cwd: __dirname,
-    base: path.join(__dirname, 'assets'),
-    path: path.join(__dirname, 'assets', 'all.js'),
-    contents: Buffer.from(
-      'console.log("line 1.1"),console.log("line 1.2"),console.log("line 2.1"),console.log("line 2.2");\n' +
-        inline
-    ),
-  });
-}
-
 describe('add', function () {
+  function makeFile() {
+    return new File({
+      cwd: __dirname,
+      base: path.join(__dirname, 'assets'),
+      path: path.join(__dirname, 'assets', 'helloworld.js'),
+      contents: Buffer.from(sourceContent),
+    });
+  }
+
   it('errors if file argument is undefined', function (done) {
     sourcemaps.add(undefined, function (err) {
       expect(
@@ -84,14 +71,6 @@ describe('add', function () {
     });
   });
 
-  it('does not error if file argument is a Vinyl object with Buffer contents', function (done) {
-    var file = makeFile();
-    sourcemaps.add(file, function (err) {
-      expect(err).toBeFalsy();
-      done();
-    });
-  });
-
   it('errors if file argument is a Vinyl object with contents from streamx.Readable', function (done) {
     var file = makeFile();
     file.contents = streamx.Readable.from([]);
@@ -112,6 +91,38 @@ describe('add', function () {
         err instanceof Error &&
           err.message === 'vinyl-sourcemap-add: Streaming not supported'
       ).toBeTruthy();
+      done();
+    });
+  });
+});
+
+describe('add (buffered contents)', function () {
+  function makeFile() {
+    return new File({
+      cwd: __dirname,
+      base: path.join(__dirname, 'assets'),
+      path: path.join(__dirname, 'assets', 'helloworld.js'),
+      contents: Buffer.from(sourceContent),
+    });
+  }
+
+  function makeFileWithInlineSourceMap() {
+    var inline = convert.fromObject(makeSourcemap()).toComment();
+    return new File({
+      cwd: __dirname,
+      base: path.join(__dirname, 'assets'),
+      path: path.join(__dirname, 'assets', 'all.js'),
+      contents: Buffer.from(
+        'console.log("line 1.1"),console.log("line 1.2"),console.log("line 2.1"),console.log("line 2.2");\n' +
+          inline
+      ),
+    });
+  }
+
+  it('does not error if file argument is a Vinyl object with Buffer contents', function (done) {
+    var file = makeFile();
+    sourcemaps.add(file, function (err) {
+      expect(err).toBeFalsy();
       done();
     });
   });

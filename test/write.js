@@ -25,28 +25,6 @@ function makeSourceMap() {
   };
 }
 
-function makeFile() {
-  var file = new File({
-    cwd: __dirname,
-    base: path.join(__dirname, 'assets'),
-    path: path.join(__dirname, 'assets', 'helloworld.js'),
-    contents: Buffer.from(sourceContent),
-    sourceMap: makeSourceMap(),
-  });
-  return file;
-}
-
-function makeNestedFile() {
-  var file = new File({
-    cwd: __dirname,
-    base: path.join(__dirname, 'assets'),
-    path: path.join(__dirname, 'assets', 'dir1', 'dir2', 'helloworld.js'),
-    contents: Buffer.from(sourceContent),
-  });
-  file.sourceMap = makeSourceMap();
-  return file;
-}
-
 function base64JSON(object) {
   return (
     'data:application/json;charset=utf-8;base64,' +
@@ -55,6 +33,17 @@ function base64JSON(object) {
 }
 
 describe('write', function () {
+  function makeFile() {
+    var file = new File({
+      cwd: __dirname,
+      base: path.join(__dirname, 'assets'),
+      path: path.join(__dirname, 'assets', 'helloworld.js'),
+      contents: Buffer.from(sourceContent),
+      sourceMap: makeSourceMap(),
+    });
+    return file;
+  }
+
   it('errors if file argument is undefined', function (done) {
     sourcemaps.write(undefined, function (err) {
       expect(
@@ -81,14 +70,6 @@ describe('write', function () {
         err instanceof Error &&
           err.message === 'vinyl-sourcemap-write: Not a vinyl file'
       ).toBeTruthy();
-      done();
-    });
-  });
-
-  it('does not error if file argument is a Vinyl object with Buffer contents', function (done) {
-    var file = makeFile();
-    sourcemaps.write(file, function (err) {
-      expect(err).toBeFalsy();
       done();
     });
   });
@@ -168,6 +149,38 @@ describe('write', function () {
       expect(file).toBeTruthy();
       expect(outFile).toEqual(file);
       done(err);
+    });
+  });
+});
+
+describe('write (buffered contents)', function () {
+  function makeFile() {
+    var file = new File({
+      cwd: __dirname,
+      base: path.join(__dirname, 'assets'),
+      path: path.join(__dirname, 'assets', 'helloworld.js'),
+      contents: Buffer.from(sourceContent),
+      sourceMap: makeSourceMap(),
+    });
+    return file;
+  }
+
+  function makeNestedFile() {
+    var file = new File({
+      cwd: __dirname,
+      base: path.join(__dirname, 'assets'),
+      path: path.join(__dirname, 'assets', 'dir1', 'dir2', 'helloworld.js'),
+      contents: Buffer.from(sourceContent),
+      sourceMap: makeSourceMap(),
+    });
+    return file;
+  }
+
+  it('does not error if file argument is a Vinyl object with Buffer contents', function (done) {
+    var file = makeFile();
+    sourcemaps.write(file, function (err) {
+      expect(err).toBeFalsy();
+      done();
     });
   });
 
