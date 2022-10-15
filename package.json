@@ -27,7 +27,9 @@
     "convert-source-map": "^1.8.0",
     "graceful-fs": "^4.2.10",
     "now-and-later": "^3.0.0",
-    "vinyl": "^3.0.0"
+    "streamx": "^2.12.5",
+    "vinyl": "^3.0.0",
+    "vinyl-contents": "^2.0.0"
   },
   "devDependencies": {
     "eslint": "^7.32.0",
@@ -36,7 +38,7 @@
     "expect": "^27.5.1",
     "mocha": "^8.4.0",
     "nyc": "^15.1.0",
-    "streamx": "^2.12.5"
+    "readable-stream": "^3.6.0"
   },
   "nyc": {
     "extension": [
