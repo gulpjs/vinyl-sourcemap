@@ -24,7 +24,7 @@
     "test": "nyc mocha --async-only"
   },
   "dependencies": {
-    "convert-source-map": "^1.8.0",
+    "convert-source-map": "^2.0.0",
     "graceful-fs": "^4.2.10",
     "now-and-later": "^3.0.0",
     "streamx": "^2.12.5",
