@@ -83,6 +83,5 @@ MIT
 <!-- prettier-ignore-end -->
 
 <!-- prettier-ignore-start -->
-
 [vinyl]: https://github.com/gulpjs/vinyl
 <!-- prettier-ignore-end -->
