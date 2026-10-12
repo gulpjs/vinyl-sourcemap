@@ -18,7 +18,7 @@ sourcemap.add(file, function (err, updatedFile) {
 });
 
 // The 2nd argument can be given as a path string
-sourcemap.write(file, './maps', function (err, updatedFile, sourcemapFile) {
+sourcemap.write(file, "./maps", function (err, updatedFile, sourcemapFile) {
   // sourcemapFile will be a Vinyl file to be written to some location
   // updatedFile will have the .contents property updated with a sourceMappingURL that resolves to sourcemapFile
 });
@@ -56,6 +56,16 @@ If the `file` is not a Vinyl object or the contents are streaming, an Error will
 
 If the `file` doesn't have a `.sourceMap` property or the contents are null, the `callback` will be called immediately without mutation to the file.
 
+## Strict No LLM / No AI Policy
+
+No LLMs for issues.
+
+No LLMs for patches / pull requests.
+
+No LLMs for comments on the bug tracker, including translation.
+
+English is encouraged, but not required. You are welcome to post in your native language and rely on others to have their own translation tools of choice to interpret your words.
+
 ## License
 
 MIT
@@ -65,11 +75,11 @@ MIT
 [npm-url]: https://npmjs.com/package/vinyl-sourcemap
 [npm-image]: https://img.shields.io/npm/v/vinyl-sourcemap.svg?style=flat-square
 
-[ci-url]: https://github.com/gulpjs/vinyl-sourcemap/actions?query=workflow:dev
-[ci-image]: https://img.shields.io/github/actions/workflow/status/gulpjs/vinyl-sourcemap/dev.yml?branch=master&style=flat-square
+[ci-url]: https://github.com/gulpjs/vinyl-sourcemap/actions/workflows/dev.yml
+[ci-image]: https://img.shields.io/github/actions/workflow/status/gulpjs/vinyl-sourcemap/dev.yml?style=flat-square
 
 [coveralls-url]: https://coveralls.io/r/gulpjs/vinyl-sourcemap
-[coveralls-image]: https://img.shields.io/coveralls/gulpjs/vinyl-sourcemap/master.svg?style=flat-square
+[coveralls-image]: https://img.shields.io/coveralls/gulpjs/vinyl-sourcemap/main.svg?style=flat-square
 <!-- prettier-ignore-end -->
 
 <!-- prettier-ignore-start -->
