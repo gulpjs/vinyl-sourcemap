@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/gulpjs/vinyl-sourcemap/compare/v2.0.0...v3.0.0) (2026-10-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* Normalize repository, dropping Node <22.15.0 ([#44](https://github.com/gulpjs/vinyl-sourcemap/issues/44))
+
+### Miscellaneous Chores
+
+* Normalize repository, dropping Node &lt;22.15.0 ([#44](https://github.com/gulpjs/vinyl-sourcemap/issues/44)) ([3d4961d](https://github.com/gulpjs/vinyl-sourcemap/commit/3d4961d6591e33686b7c3011d4dbdfb711e90513))
+
 ## [2.0.0](https://www.github.com/gulpjs/vinyl-sourcemap/compare/v1.1.0...v2.0.0) (2022-10-17)
 
 
