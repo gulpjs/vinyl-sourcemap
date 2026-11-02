@@ -6,7 +6,6 @@ var assert = require("node:assert");
 var { describe, it } = require("node:test");
 
 var File = require("vinyl");
-
 var convert = require("convert-source-map");
 
 var sourcemaps = require("..");
@@ -352,7 +351,7 @@ describe("add (buffer contents)", function () {
     file.stem = "brandnew";
     sourcemaps.add(file, function (err, outFile) {
       assert.ok(outFile.sourceMap);
-      assert.deepStrictEqual(outFile.sourceMap.file, "brandnew.js");
+      assert.strictEqual(outFile.sourceMap.file, "brandnew.js");
       done(err);
     });
   });
@@ -362,7 +361,7 @@ describe("add (buffer contents)", function () {
     file.stem = "assets\\\\brandnew";
     sourcemaps.add(file, function (err, outFile) {
       assert.ok(outFile.sourceMap);
-      assert.deepStrictEqual(outFile.sourceMap.file, "assets/brandnew.js");
+      assert.strictEqual(outFile.sourceMap.file, "assets/brandnew.js");
       done(err);
     });
   });
