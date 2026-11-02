@@ -92,7 +92,6 @@ describe("write", function () {
     var file = makeFile(null);
     sourcemaps.write(file, function (err, outFile) {
       assert.ifError(err);
-      assert.ok(file);
       assert.strictEqual(outFile, file);
       done(err);
     });
@@ -145,7 +144,6 @@ describe("write (buffer contents)", function () {
     delete file.sourceMap;
     sourcemaps.write(file, function (err, outFile) {
       assert.ifError(err);
-      assert.ok(file);
       assert.strictEqual(outFile, file);
       done(err);
     });
@@ -155,7 +153,7 @@ describe("write (buffer contents)", function () {
     var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.write(file, function (err, outFile, sourceMapFile) {
       assert.ok(outFile);
-      assert.ok(sourceMapFile == null);
+      assert.strictEqual(sourceMapFile, undefined);
       assert.strictEqual(File.isVinyl(outFile), true);
       assert.strictEqual(outFile, file);
       assert.strictEqual(
@@ -387,7 +385,6 @@ function suite(moduleName) {
       delete file.sourceMap;
       sourcemaps.write(file, function (err, outFile) {
         assert.ifError(err);
-        assert.ok(file);
         assert.strictEqual(outFile, file);
         done(err);
       });
@@ -398,7 +395,7 @@ function suite(moduleName) {
       sourcemaps.write(file, function (err, updatedFile, sourceMapFile) {
         assert.ifError(err);
         assert.ok(updatedFile);
-        assert.strictEqual(sourceMapFile == null, true);
+        assert.strictEqual(sourceMapFile, undefined);
         assert.strictEqual(File.isVinyl(updatedFile), true);
         assert.strictEqual(updatedFile, file);
 

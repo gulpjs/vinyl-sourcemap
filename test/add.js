@@ -70,7 +70,6 @@ describe("add", function () {
     var file = makeFile(null);
     sourcemaps.add(file, function (err, outFile) {
       assert.ifError(err);
-      assert.ok(file);
       assert.strictEqual(outFile, file);
       done(err);
     });
