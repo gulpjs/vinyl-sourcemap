@@ -1,10 +1,12 @@
 "use strict";
 
-var fs = require("fs");
-var os = require("os");
-var path = require("path");
+var fs = require("node:fs");
+var os = require("node:os");
+var path = require("node:path");
+var assert = require("node:assert");
+var { describe, it } = require("node:test");
+
 var File = require("vinyl");
-var expect = require("expect");
 
 var sourcemaps = require("..");
 
@@ -53,107 +55,109 @@ function base64JSON(object) {
 }
 
 describe("write", function () {
-  it("errors if file argument is undefined", function (done) {
+  it("errors if file argument is undefined", function (t, done) {
     sourcemaps.write(undefined, function (err) {
-      expect(
-        err instanceof Error &&
-          err.message === "vinyl-sourcemap-write: Not a vinyl file",
-      ).toBeTruthy();
+      assert.ok(err instanceof Error);
+      assert.strictEqual(
+        err.message,
+        "vinyl-sourcemap-write: Not a vinyl file",
+      );
       done();
     });
   });
 
-  it("errors if file argument is null", function (done) {
+  it("errors if file argument is null", function (t, done) {
     sourcemaps.write(null, function (err) {
-      expect(
-        err instanceof Error &&
-          err.message === "vinyl-sourcemap-write: Not a vinyl file",
-      ).toBeTruthy();
+      assert.ok(err instanceof Error);
+      assert.strictEqual(
+        err.message,
+        "vinyl-sourcemap-write: Not a vinyl file",
+      );
       done();
     });
   });
 
-  it("errors if file argument is a plain object", function (done) {
+  it("errors if file argument is a plain object", function (t, done) {
     sourcemaps.write({}, function (err) {
-      expect(
-        err instanceof Error &&
-          err.message === "vinyl-sourcemap-write: Not a vinyl file",
-      ).toBeTruthy();
+      assert.ok(err instanceof Error);
+      assert.strictEqual(
+        err.message,
+        "vinyl-sourcemap-write: Not a vinyl file",
+      );
       done();
     });
   });
 
-  it("calls back with the untouched file if file contents are null", function (done) {
+  it("calls back with the untouched file if file contents are null", function (t, done) {
     var file = makeFile(null);
     sourcemaps.write(file, function (err, outFile) {
-      expect(err).toBeFalsy();
-      expect(file).toBeTruthy();
-      expect(outFile).toEqual(file);
+      assert.ifError(err);
+      assert.strictEqual(outFile, file);
       done(err);
     });
   });
 });
 
 describe("write (buffer contents)", function () {
-  it("does not error if file argument is a Vinyl object with Buffer contents", function (done) {
+  it("does not error if file argument is a Vinyl object with Buffer contents", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.write(file, function (err) {
-      expect(err).toBeFalsy();
+      assert.ifError(err);
       done();
     });
   });
 
-  it("accepts null destPath argument", function (done) {
+  it("accepts null destPath argument", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.write(file, null, function (err) {
-      expect(err).toBeFalsy();
+      assert.ifError(err);
       done(err);
     });
   });
 
-  it("accepts undefined destPath argument", function (done) {
+  it("accepts undefined destPath argument", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.write(file, undefined, function (err) {
-      expect(err).toBeFalsy();
+      assert.ifError(err);
       done(err);
     });
   });
 
-  it("accepts string destPath argument", function (done) {
+  it("accepts string destPath argument", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.write(file, "something", function (err) {
-      expect(err).toBeFalsy();
+      assert.ifError(err);
       done(err);
     });
   });
 
-  it("juggles callback if no destPath argument", function (done) {
+  it("juggles callback if no destPath argument", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.write(file, function (err) {
-      expect(err).toBeFalsy();
+      assert.ifError(err);
       done(err);
     });
   });
 
-  it("calls back with the untouched file if sourceMap property does not exist", function (done) {
+  it("calls back with the untouched file if sourceMap property does not exist", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     delete file.sourceMap;
     sourcemaps.write(file, function (err, outFile) {
-      expect(err).toBeFalsy();
-      expect(file).toBeTruthy();
-      expect(outFile).toEqual(file);
+      assert.ifError(err);
+      assert.strictEqual(outFile, file);
       done(err);
     });
   });
 
-  it("appends an inline sourcemap when no destPath", function (done) {
+  it("appends an inline sourcemap when no destPath", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.write(file, function (err, outFile, sourceMapFile) {
-      expect(outFile).toBeTruthy();
-      expect(sourceMapFile).toBeFalsy();
-      expect(File.isVinyl(outFile)).toEqual(true);
-      expect(outFile).toEqual(file);
-      expect(outFile.contents.toString()).toEqual(
+      assert.ok(outFile);
+      assert.strictEqual(sourceMapFile, undefined);
+      assert.strictEqual(File.isVinyl(outFile), true);
+      assert.strictEqual(outFile, file);
+      assert.strictEqual(
+        outFile.contents.toString(),
         sourceContent +
           "//# sourceMappingURL=" +
           base64JSON(outFile.sourceMap) +
@@ -163,11 +167,12 @@ describe("write (buffer contents)", function () {
     });
   });
 
-  it("writes /*# */ comment if .css extension", function (done) {
+  it("writes /*# */ comment if .css extension", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     file.path = file.path.replace(".js", ".css");
     sourcemaps.write(file, function (err, outFile) {
-      expect(outFile.contents.toString()).toEqual(
+      assert.strictEqual(
+        outFile.contents.toString(),
         sourceContent +
           "/*# sourceMappingURL=" +
           base64JSON(outFile.sourceMap) +
@@ -177,11 +182,12 @@ describe("write (buffer contents)", function () {
     });
   });
 
-  it("write //# comment if any non-.css extension", function (done) {
+  it("write //# comment if any non-.css extension", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     file.path = file.path.replace(".js", ".txt");
     sourcemaps.write(file, function (err, outFile) {
-      expect(outFile.contents.toString()).toEqual(
+      assert.strictEqual(
+        outFile.contents.toString(),
         sourceContent +
           "//# sourceMappingURL=" +
           base64JSON(outFile.sourceMap) +
@@ -191,11 +197,12 @@ describe("write (buffer contents)", function () {
     });
   });
 
-  it("uses \\r\\n depending on the existing style", function (done) {
+  it("uses \\r\\n depending on the existing style", function (t, done) {
     var customContents = sourceContent.replace(/\n/g, "\r\n");
     var file = makeFile(Buffer.from(customContents));
     sourcemaps.write(file, function (err, outFile) {
-      expect(outFile.contents.toString()).toEqual(
+      assert.strictEqual(
+        outFile.contents.toString(),
         customContents +
           "//# sourceMappingURL=" +
           base64JSON(outFile.sourceMap) +
@@ -205,11 +212,12 @@ describe("write (buffer contents)", function () {
     });
   });
 
-  it("uses \\r depending on the existing style", function (done) {
+  it("uses \\r depending on the existing style", function (t, done) {
     var customContents = sourceContent.replace(/\n/g, "\r");
     var file = makeFile(Buffer.from(customContents));
     sourcemaps.write(file, function (err, updatedFile) {
-      expect(updatedFile.contents.toString()).toEqual(
+      assert.strictEqual(
+        updatedFile.contents.toString(),
         customContents +
           "//# sourceMappingURL=" +
           base64JSON(updatedFile.sourceMap) +
@@ -219,11 +227,12 @@ describe("write (buffer contents)", function () {
     });
   });
 
-  it("uses os.EOL if no EOL in contents", function (done) {
+  it("uses os.EOL if no EOL in contents", function (t, done) {
     var customContents = sourceContent.replace(/\n/g, "");
     var file = makeFile(Buffer.from(customContents));
     sourcemaps.write(file, function (err, outFile) {
-      expect(outFile.contents.toString()).toEqual(
+      assert.strictEqual(
+        outFile.contents.toString(),
         customContents +
           "//# sourceMappingURL=" +
           base64JSON(outFile.sourceMap) +
@@ -233,36 +242,42 @@ describe("write (buffer contents)", function () {
     });
   });
 
-  it("writes an external sourcemap when given a destPath", function (done) {
+  it("writes an external sourcemap when given a destPath", function (t, done) {
     var file = makeFile(Buffer.from(sourceContent));
     sourcemaps.write(file, "../maps", function (err, outFile, sourceMapFile) {
-      expect(File.isVinyl(outFile)).toEqual(true);
-      expect(outFile).toEqual(file);
-      expect(outFile.contents.toString()).toEqual(
+      assert.strictEqual(File.isVinyl(outFile), true);
+      assert.strictEqual(outFile, file);
+      assert.strictEqual(
+        outFile.contents.toString(),
         sourceContent + "//# sourceMappingURL=../maps/helloworld.js.map\n",
       );
 
-      expect(File.isVinyl(sourceMapFile)).toEqual(true);
-      expect(sourceMapFile.path).toEqual(
+      assert.strictEqual(File.isVinyl(sourceMapFile), true);
+      assert.strictEqual(
+        sourceMapFile.path,
         path.join(__dirname, "maps/helloworld.js.map"),
       );
-      expect(JSON.parse(sourceMapFile.contents)).toEqual(outFile.sourceMap);
-      expect(sourceMapFile.stat.isFile()).toEqual(true);
-      expect(sourceMapFile.stat.isDirectory()).toEqual(false);
-      expect(sourceMapFile.stat.isBlockDevice()).toEqual(false);
-      expect(sourceMapFile.stat.isCharacterDevice()).toEqual(false);
-      expect(sourceMapFile.stat.isSymbolicLink()).toEqual(false);
-      expect(sourceMapFile.stat.isFIFO()).toEqual(false);
-      expect(sourceMapFile.stat.isSocket()).toEqual(false);
+      assert.deepStrictEqual(
+        JSON.parse(sourceMapFile.contents),
+        outFile.sourceMap,
+      );
+      assert.strictEqual(sourceMapFile.stat.isFile(), true);
+      assert.strictEqual(sourceMapFile.stat.isDirectory(), false);
+      assert.strictEqual(sourceMapFile.stat.isBlockDevice(), false);
+      assert.strictEqual(sourceMapFile.stat.isCharacterDevice(), false);
+      assert.strictEqual(sourceMapFile.stat.isSymbolicLink(), false);
+      assert.strictEqual(sourceMapFile.stat.isFIFO(), false);
+      assert.strictEqual(sourceMapFile.stat.isSocket(), false);
 
       done(err);
     });
   });
 
-  it("create shortest path to map in file comment", function (done) {
+  it("create shortest path to map in file comment", function (t, done) {
     var file = makeNestedFile(Buffer.from(sourceContent));
     sourcemaps.write(file, "dir1/maps", function (err, outFile) {
-      expect(outFile.contents.toString()).toEqual(
+      assert.strictEqual(
+        outFile.contents.toString(),
         sourceContent +
           "//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n",
       );
@@ -271,12 +286,13 @@ describe("write (buffer contents)", function () {
   });
 
   // TODO: need to figure out this test
-  it.skip("normalizes Windows paths to unix style", function (done) {
+  it.skip("normalizes Windows paths to unix style", function (t, done) {
     var file = makeNestedFile();
     file.path = file.path.replace(/\//g, "\\\\");
     console.log(file.path);
     sourcemaps.write(file, "..\\\\maps", function (err, outFile) {
-      expect(outFile.contents).toEqual(
+      assert.strictEqual(
+        outFile.contents,
         sourceContent + "//# sourceMappingURL=../maps/helloworld.js.map\n",
       );
       done(err);
@@ -284,10 +300,11 @@ describe("write (buffer contents)", function () {
   });
 
   // TODO: need to figure out this test
-  it.skip("properly handles remote paths", function (done) {
+  it.skip("properly handles remote paths", function (t, done) {
     var file = makeNestedFile();
     sourcemaps.write(file, "http://example.com", function (err, outFile) {
-      expect(outFile.contents).toEqual(
+      assert.strictEqual(
+        outFile.contents,
         sourceContent +
           "//# sourceMappingURL=http://example.com/dir1/dir2/helloworld.js.map\n",
       );
@@ -323,68 +340,68 @@ function suite(moduleName) {
       });
     }
 
-    it("does not error if file argument is a Vinyl object with Stream contents", function (done) {
+    it("does not error if file argument is a Vinyl object with Stream contents", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       sourcemaps.write(file, function (err) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
         done();
       });
     });
 
-    it("accepts null destPath argument", function (done) {
+    it("accepts null destPath argument", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       sourcemaps.write(file, null, function (err) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
         done(err);
       });
     });
 
-    it("accepts undefined destPath argument", function (done) {
+    it("accepts undefined destPath argument", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       sourcemaps.write(file, undefined, function (err) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
         done(err);
       });
     });
 
-    it("accepts string destPath argument", function (done) {
+    it("accepts string destPath argument", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       sourcemaps.write(file, "something", function (err) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
         done(err);
       });
     });
 
-    it("juggles callback if no destPath argument", function (done) {
+    it("juggles callback if no destPath argument", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       sourcemaps.write(file, function (err) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
         done(err);
       });
     });
 
-    it("calls back with the untouched file if sourceMap property does not exist", function (done) {
+    it("calls back with the untouched file if sourceMap property does not exist", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       delete file.sourceMap;
       sourcemaps.write(file, function (err, outFile) {
-        expect(err).toBeFalsy();
-        expect(file).toBeTruthy();
-        expect(outFile).toEqual(file);
+        assert.ifError(err);
+        assert.strictEqual(outFile, file);
         done(err);
       });
     });
 
-    it("appends an inline sourcemap when no destPath", function (done) {
+    it("appends an inline sourcemap when no destPath", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       sourcemaps.write(file, function (err, updatedFile, sourceMapFile) {
-        expect(err).toBeFalsy();
-        expect(updatedFile).toBeTruthy();
-        expect(sourceMapFile).toBeFalsy();
-        expect(File.isVinyl(updatedFile)).toEqual(true);
-        expect(updatedFile).toEqual(file);
+        assert.ifError(err);
+        assert.ok(updatedFile);
+        assert.strictEqual(sourceMapFile, undefined);
+        assert.strictEqual(File.isVinyl(updatedFile), true);
+        assert.strictEqual(updatedFile, file);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             sourceContent +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -392,18 +409,19 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("appends /*# */ comment if .css extension", function (done) {
+    it("appends /*# */ comment if .css extension", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       file.path = file.path.replace(".js", ".css");
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             sourceContent +
               "/*# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -411,18 +429,19 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("appends //# comment if any non-.css extension", function (done) {
+    it("appends //# comment if any non-.css extension", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       file.path = file.path.replace(".js", ".txt");
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             sourceContent +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -430,18 +449,19 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("uses \\r\\n depending on the existing style", function (done) {
+    it("uses \\r\\n depending on the existing style", function (t, done) {
       var customContents = sourceContent.replace(/\n/g, "\r\n");
       var file = makeFile(stream.Readable.from(customContents));
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             customContents +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -449,18 +469,19 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("only uses the final newline for the existing style", function (done) {
+    it("only uses the final newline for the existing style", function (t, done) {
       var customContents = sourceContent.replace(/\n/, "\r\n");
       var file = makeFile(stream.Readable.from(customContents));
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             customContents +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -468,18 +489,19 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("uses \\r depending on the existing style", function (done) {
+    it("uses \\r depending on the existing style", function (t, done) {
       var customContents = sourceContent.replace(/\n/g, "\r");
       var file = makeFile(stream.Readable.from(customContents));
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             customContents +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -487,18 +509,19 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("uses os.EOL if no EOL in contents", function (done) {
+    it("uses os.EOL if no EOL in contents", function (t, done) {
       var customContents = sourceContent.replace(/\n/g, "");
       var file = makeFile(stream.Readable.from(customContents));
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             customContents +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -506,19 +529,20 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("also works with stream chunks that are buffers", function (done) {
+    it("also works with stream chunks that are buffers", function (t, done) {
       var customContents = sourceContent.replace(/\n/g, "\r\n");
       // We use the array here so readable-stream doesn't iterate the entire buffer by byte
       var file = makeFile(stream.Readable.from([Buffer.from(customContents)]));
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             customContents +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -526,11 +550,11 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("detects CRLF across chunks", function (done) {
+    it("detects CRLF across chunks", function (t, done) {
       // Assumes to be 3 chunks but the last is an empty string
       var contentChunks = sourceContent.split("\n");
       var file = makeFile(
@@ -542,10 +566,11 @@ function suite(moduleName) {
         ]),
       );
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             contentChunks.join("\r\n") +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -553,21 +578,22 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("detects CR across chunks without any LF", function (done) {
+    it("detects CR across chunks without any LF", function (t, done) {
       // Assumes to be 3 chunks but the last is an empty string
       var contentChunks = sourceContent.split("\n");
       var file = makeFile(
         stream.Readable.from([contentChunks[0], "\r", contentChunks[1] + "\r"]),
       );
       sourcemaps.write(file, function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             contentChunks.join("\r") +
               "//# sourceMappingURL=" +
               base64JSON(updatedFile.sourceMap) +
@@ -575,61 +601,65 @@ function suite(moduleName) {
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
 
-    it("writes an external sourcemap when given a destPath", function (done) {
+    it("writes an external sourcemap when given a destPath", function (t, done) {
       var file = makeFile(stream.Readable.from(sourceContent));
       sourcemaps.write(
         file,
         "../maps",
         function (err, updatedFile, sourceMapFile) {
-          expect(err).toBeFalsy();
+          assert.ifError(err);
 
-          expect(File.isVinyl(updatedFile)).toEqual(true);
-          expect(updatedFile).toEqual(file);
+          assert.strictEqual(File.isVinyl(updatedFile), true);
+          assert.strictEqual(updatedFile, file);
 
-          expect(File.isVinyl(sourceMapFile)).toEqual(true);
-          expect(sourceMapFile.path).toEqual(
+          assert.strictEqual(File.isVinyl(sourceMapFile), true);
+          assert.strictEqual(
+            sourceMapFile.path,
             path.join(__dirname, "maps/helloworld.js.map"),
           );
-          expect(JSON.parse(sourceMapFile.contents)).toEqual(
+          assert.deepStrictEqual(
+            JSON.parse(sourceMapFile.contents),
             updatedFile.sourceMap,
           );
-          expect(sourceMapFile.stat.isFile()).toEqual(true);
-          expect(sourceMapFile.stat.isDirectory()).toEqual(false);
-          expect(sourceMapFile.stat.isBlockDevice()).toEqual(false);
-          expect(sourceMapFile.stat.isCharacterDevice()).toEqual(false);
-          expect(sourceMapFile.stat.isSymbolicLink()).toEqual(false);
-          expect(sourceMapFile.stat.isFIFO()).toEqual(false);
-          expect(sourceMapFile.stat.isSocket()).toEqual(false);
+          assert.strictEqual(sourceMapFile.stat.isFile(), true);
+          assert.strictEqual(sourceMapFile.stat.isDirectory(), false);
+          assert.strictEqual(sourceMapFile.stat.isBlockDevice(), false);
+          assert.strictEqual(sourceMapFile.stat.isCharacterDevice(), false);
+          assert.strictEqual(sourceMapFile.stat.isSymbolicLink(), false);
+          assert.strictEqual(sourceMapFile.stat.isFIFO(), false);
+          assert.strictEqual(sourceMapFile.stat.isSocket(), false);
 
-          function assert(contents) {
-            expect(contents).toEqual(
+          function assertion(contents) {
+            assert.strictEqual(
+              contents,
               sourceContent +
                 "//# sourceMappingURL=../maps/helloworld.js.map\n",
             );
           }
 
-          stream.pipeline([updatedFile.contents, concat(assert)], done);
+          stream.pipeline([updatedFile.contents, concat(assertion)], done);
         },
       );
     });
 
-    it("create shortest path to map in file comment", function (done) {
+    it("create shortest path to map in file comment", function (t, done) {
       var file = makeNestedFile(stream.Readable.from(sourceContent));
       sourcemaps.write(file, "dir1/maps", function (err, updatedFile) {
-        expect(err).toBeFalsy();
+        assert.ifError(err);
 
-        function assert(contents) {
-          expect(contents).toEqual(
+        function assertion(contents) {
+          assert.strictEqual(
+            contents,
             sourceContent +
               "//# sourceMappingURL=../maps/dir1/dir2/helloworld.js.map\n",
           );
         }
 
-        stream.pipeline([updatedFile.contents, concat(assert)], done);
+        stream.pipeline([updatedFile.contents, concat(assertion)], done);
       });
     });
   });
